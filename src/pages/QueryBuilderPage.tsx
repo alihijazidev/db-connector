@@ -1,10 +1,10 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useConnection } from '@/context/ConnectionContext';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, Loader2, Search, Table as TableIcon, Columns, Filter, Play, PlusCircle, Link, ListOrdered } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Loader2, Search, Table as TableIcon, Columns, Play, PlusCircle, Link } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchDatabaseMetadata, executeQuery } from '@/api/mockDatabaseApi';
 import { ColumnMetadata, FilterCondition, QueryDefinition, QueryResult, TableMetadata, JoinClause, OrderByClause, GroupByClause } from '@/types/database';
@@ -12,11 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { FilterConditionRow } from '@/components/query/FilterConditionRow';
 import { DataTable } from '@/components/query/DataTable';
 import { toast } from 'sonner';
 import { JoinClauseRow } from '@/components/query/JoinClauseRow';
-import SortAndGroupBuilder from '@/components/query/SortAndGroupBuilder';
 
 const DEFAULT_LIMIT = 10;
 
@@ -35,7 +33,8 @@ const QueryBuilderPage: React.FC = () => {
   const [groupBy, setGroupBy] = useState<GroupByClause[]>([]);
   const [offset, setOffset] = useState(0);
 
-  const { data: metadata, isLoading: isLoadingMetadata, error: metadataError } = useQuery({
+  // جلب البيانات الوصفية (الميتاداتا) يظل تلقائياً لتهيئة الواجهة
+  const { data: metadata, isLoading: isLoadingMetadata } = useQuery({
     queryKey: ['dbMetadata', connectionId],
     queryFn: () => fetchDatabaseMetadata(connectionId!),
     enabled: !!connectionId,
@@ -51,12 +50,6 @@ const QueryBuilderPage: React.FC = () => {
       return acc;
     }, []);
   }, [metadata, selectedTableName, joins]);
-
-  const allAvailableColumns: ColumnMetadata[] = useMemo(() => {
-    return tablesInQuery.flatMap(table => table.columns.map(col => ({ ...col, name: `${table.name}.${col.name}` })));
-  }, [tablesInQuery]);
-
-  const allAvailableColumnNames = useMemo(() => allAvailableColumns.map(c => c.name), [allAvailableColumns]);
 
   const handlePrimaryTableChange = (newTable: string) => {
     setSelectedTableName(newTable);
@@ -80,10 +73,11 @@ const QueryBuilderPage: React.FC = () => {
     offset: offset,
   }), [connectionId, selectedTableName, joins, selectedColumns, filters, orderBy, groupBy, offset]);
 
-  const { data: queryResult, isLoading: isExecutingQuery, refetch: executeQueryRefetch } = useQuery<QueryResult>({
+  // تعطيل الجلب التلقائي باستخدام enabled: false
+  const { data: queryResult, isFetching: isExecutingQuery, refetch: executeQueryRefetch } = useQuery<QueryResult>({
     queryKey: ['queryResults', queryDefinition],
     queryFn: () => executeQuery(queryDefinition),
-    enabled: !!selectedTableName && !!connectionId,
+    enabled: false,
     staleTime: 0,
   });
 
@@ -92,11 +86,17 @@ const QueryBuilderPage: React.FC = () => {
       toast.warning("يرجى اختيار جدول أولاً.");
       return;
     }
-    setOffset(0);
     executeQueryRefetch();
   };
 
-  if (!connection) return <Layout><Alert variant="destructive">الاتصال غير موجود</Alert></Layout>;
+  // معالجة تغيير الصفحة - نحتاج لتنفيذ الاستعلام مرة أخرى عند تغيير الأوفست
+  const handlePageChange = (newOffset: number) => {
+    setOffset(newOffset);
+    // نستخدم setTimeout لضمان تحديث الـ offset في الـ queryDefinition قبل إعادة الجلب
+    setTimeout(() => executeQueryRefetch(), 0);
+  };
+
+  if (!connection) return <Layout><Alert variant="destructive"><AlertDescription>الاتصال غير موجود</AlertDescription></Alert></Layout>;
   if (isLoadingMetadata) return <Layout><div className="flex items-center justify-center h-64"><Loader2 className="ms-3 h-8 w-8 animate-spin" /> تحميل البيانات...</div></Layout>;
 
   return (
@@ -110,7 +110,6 @@ const QueryBuilderPage: React.FC = () => {
           </CardHeader>
           <CardContent className="p-8 space-y-10">
             
-            {/* 1. Primary Table */}
             <div className="space-y-4">
               <h4 className="text-xl font-bold flex items-center text-foreground">
                 <TableIcon className="w-6 h-6 ms-2 text-primary" /> الجدول الأساسي
@@ -127,7 +126,6 @@ const QueryBuilderPage: React.FC = () => {
               </Select>
             </div>
 
-            {/* 2. Joins */}
             {selectedTableName && (
               <div className="space-y-4 p-6 border-2 border-primary/10 rounded-2xl bg-secondary/20">
                 <h4 className="text-xl font-bold flex items-center text-foreground">
@@ -151,7 +149,6 @@ const QueryBuilderPage: React.FC = () => {
               </div>
             )}
 
-            {/* 3. Columns */}
             {selectedTableName && (
               <div className="space-y-4 p-6 border-2 border-primary/10 rounded-2xl bg-secondary/20">
                 <h4 className="text-xl font-bold flex items-center text-foreground">
@@ -184,22 +181,20 @@ const QueryBuilderPage: React.FC = () => {
               </div>
             )}
 
-            {/* 4. Run Button */}
             <div className="pt-6">
-              <Button onClick={handleExecuteQuery} className="w-full rounded-2xl py-8 text-xl font-black shadow-2xl group">
+              <Button onClick={handleExecuteQuery} className="w-full rounded-2xl py-8 text-xl font-black shadow-2xl group" disabled={isExecutingQuery}>
                 {isExecutingQuery ? <Loader2 className="ms-3 h-6 w-6 animate-spin" /> : <Play className="ms-3 h-6 w-6" />}
                 {isExecutingQuery ? "جاري المعالجة..." : "تشغيل الاستعلام"}
               </Button>
             </div>
 
-            {/* 5. Results */}
             {queryResult && (
               <div className="mt-12">
                 <DataTable 
                   result={queryResult} 
                   limit={DEFAULT_LIMIT} 
                   offset={offset} 
-                  onPageChange={setOffset}
+                  onPageChange={handlePageChange}
                 />
               </div>
             )}
