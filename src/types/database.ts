@@ -38,8 +38,9 @@ export type JoinType = "INNER JOIN" | "LEFT JOIN" | "RIGHT JOIN" | "FULL OUTER J
 export interface JoinClause {
   id: string;
   joinType: JoinType;
+  sourceTable: string; // NEW: The table this join originates from (can be primary or a previous join target)
   targetTable: string;
-  sourceColumn: string; // Column from the primary table
+  sourceColumn: string; // Column from the sourceTable
   targetColumn: string; // Column from the targetTable
 }
 

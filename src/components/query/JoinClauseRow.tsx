@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 interface JoinClauseRowProps {
   join: JoinClause;
   allTables: TableMetadata[];
-  primaryTableColumns: string[];
+  availableSourceTables: string[]; // NEW: Tables already included in the query (primary + previous joins)
   onChange: (join: JoinClause) => void;
   onRemove: (id: string) => void;
 }
@@ -23,7 +23,7 @@ const JOIN_TYPES: { value: JoinType, label: string, description: string }[] = [
 export const JoinClauseRow: React.FC<JoinClauseRowProps> = ({
   join,
   allTables,
-  primaryTableColumns,
+  availableSourceTables,
   onChange,
   onRemove,
 }) => {
@@ -31,10 +31,12 @@ export const JoinClauseRow: React.FC<JoinClauseRowProps> = ({
     onChange({ ...join, [field]: value });
   };
 
+  // Get metadata for the currently selected source and target tables
+  const sourceTableMetadata = allTables.find(t => t.name === join.sourceTable);
   const targetTableMetadata = allTables.find(t => t.name === join.targetTable);
+  
+  const sourceTableColumns = sourceTableMetadata?.columns.map(c => c.name) || [];
   const targetTableColumns = targetTableMetadata?.columns.map(c => c.name) || [];
-
-  const currentJoinType = JOIN_TYPES.find(t => t.value === join.joinType);
 
   return (
     <div className="flex flex-wrap items-center gap-3 p-3 border rounded-xl bg-background shadow-sm">
@@ -58,7 +60,7 @@ export const JoinClauseRow: React.FC<JoinClauseRowProps> = ({
         </Select>
       </div>
 
-      {/* Target Table Selector */}
+      {/* Target Table Selector (The table being added) */}
       <div className="flex-1 min-w-[120px]">
         <Select
           value={join.targetTable}
@@ -77,18 +79,38 @@ export const JoinClauseRow: React.FC<JoinClauseRowProps> = ({
 
       <span className="text-sm font-medium text-muted-foreground">ON</span>
 
-      {/* Source Column Selector (Primary Table) */}
+      {/* Source Table Selector (The table already in the query) */}
+      <div className="flex-1 min-w-[120px]">
+        <Select
+          value={join.sourceTable}
+          onValueChange={(val) => handleFieldChange('sourceTable', val)}
+          disabled={availableSourceTables.length === 0}
+        >
+          <SelectTrigger className="w-full rounded-lg">
+            <SelectValue placeholder="Source Table" />
+          </SelectTrigger>
+          <SelectContent>
+            {availableSourceTables.map(table => (
+              <SelectItem key={table} value={table}>{table}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <span className="text-sm font-bold text-primary">.</span>
+
+      {/* Source Column Selector (Column from Source Table) */}
       <div className="flex-1 min-w-[120px]">
         <Select
           value={join.sourceColumn}
           onValueChange={(val) => handleFieldChange('sourceColumn', val)}
-          disabled={primaryTableColumns.length === 0}
+          disabled={sourceTableColumns.length === 0}
         >
           <SelectTrigger className="w-full rounded-lg">
-            <SelectValue placeholder="Primary Column" />
+            <SelectValue placeholder="Source Column" />
           </SelectTrigger>
           <SelectContent>
-            {primaryTableColumns.map(col => (
+            {sourceTableColumns.map(col => (
               <SelectItem key={col} value={col}>{col}</SelectItem>
             ))}
           </SelectContent>
@@ -97,7 +119,7 @@ export const JoinClauseRow: React.FC<JoinClauseRowProps> = ({
 
       <span className="text-sm font-bold text-primary">=</span>
 
-      {/* Target Column Selector (Joined Table) */}
+      {/* Target Column Selector (Column from Joined Table) */}
       <div className="flex-1 min-w-[120px]">
         <Select
           value={join.targetColumn}
@@ -105,7 +127,7 @@ export const JoinClauseRow: React.FC<JoinClauseRowProps> = ({
           disabled={targetTableColumns.length === 0}
         >
           <SelectTrigger className="w-full rounded-lg">
-            <SelectValue placeholder="Joined Column" />
+            <SelectValue placeholder="Target Column" />
           </SelectTrigger>
           <SelectContent>
             {targetTableColumns.map(col => (

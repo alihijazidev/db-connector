@@ -55,6 +55,14 @@ const QueryBuilderPage: React.FC = () => {
     return currentTable?.columns || [];
   }, [currentTable]);
 
+  // List of tables currently included in the query (Primary table + all joined tables)
+  const availableSourceTables: string[] = useMemo(() => {
+    if (!selectedTableName) return [];
+    const joinedTables = joins.map(j => j.targetTable).filter(Boolean);
+    return [selectedTableName, ...joinedTables];
+  }, [selectedTableName, joins]);
+
+
   // Initialize table selection once metadata loads and reset state when table changes
   React.useEffect(() => {
     if (metadata && metadata.tables.length > 0) {
@@ -75,7 +83,7 @@ const QueryBuilderPage: React.FC = () => {
   const queryDefinition: QueryDefinition = useMemo(() => ({
     connectionId: connectionId!,
     tableName: selectedTableName,
-    joins: joins.filter(j => j.targetTable && j.sourceColumn && j.targetColumn), // Only send valid joins
+    joins: joins.filter(j => j.sourceTable && j.targetTable && j.sourceColumn && j.targetColumn), // Only send valid joins
     columns: selectedColumns,
     filters: filters.filter(f => f.column && f.operator && f.value), // Only send valid filters
     orderBy: orderBy.filter(o => o.column), // Only send valid order by clauses
@@ -141,11 +149,14 @@ const QueryBuilderPage: React.FC = () => {
 
   const handleAddJoin = () => {
     setOffset(0);
+    // Default the source table to the primary table if it exists
+    const defaultSourceTable = selectedTableName || '';
     setJoins(prev => [
       ...prev, 
       { 
         id: crypto.randomUUID(), 
         joinType: 'INNER JOIN', 
+        sourceTable: defaultSourceTable, // Initialize with primary table
         targetTable: '', 
         sourceColumn: '', 
         targetColumn: '' 
@@ -305,7 +316,7 @@ const QueryBuilderPage: React.FC = () => {
                         key={join.id}
                         join={join}
                         allTables={metadata?.tables || []}
-                        primaryTableColumns={allColumnNames}
+                        availableSourceTables={availableSourceTables}
                         onChange={handleJoinChange}
                         onRemove={handleRemoveJoin}
                       />
