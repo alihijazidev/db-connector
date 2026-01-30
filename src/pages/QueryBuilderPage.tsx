@@ -7,7 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Search, Table as TableIcon, Columns, Play, PlusCircle, Link, Filter } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchDatabaseMetadata, executeQuery } from '@/api/mockDatabaseApi';
-import { ColumnMetadata, FilterCondition, QueryDefinition, QueryResult, TableMetadata, JoinClause, OrderByClause, GroupByClause } from '@/types/database';
+import { ColumnMetadata, FilterCondition, QueryDefinition, QueryResult, TableMetadata, JoinClause } from '@/types/database';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -16,7 +16,6 @@ import { DataTable } from '@/components/query/DataTable';
 import { toast } from 'sonner';
 import { JoinClauseRow } from '@/components/query/JoinClauseRow';
 import { FilterConditionRow } from '@/components/query/FilterConditionRow';
-import SortAndGroupBuilder from '@/components/query/SortAndGroupBuilder';
 
 const DEFAULT_LIMIT = 10;
 
@@ -31,8 +30,6 @@ const QueryBuilderPage: React.FC = () => {
   const [selectedColumns, setSelectedColumns] = useState<string[]>(['*']);
   const [filters, setFilters] = useState<FilterCondition[]>([]);
   const [joins, setJoins] = useState<JoinClause[]>([]);
-  const [orderBy, setOrderBy] = useState<OrderByClause[]>([]);
-  const [groupBy, setGroupBy] = useState<GroupByClause[]>([]);
   const [offset, setOffset] = useState(0);
 
   const { data: metadata, isLoading: isLoadingMetadata } = useQuery({
@@ -64,8 +61,6 @@ const QueryBuilderPage: React.FC = () => {
     setFilters([{ id: crypto.randomUUID(), column: '', operator: '=', value: '', logicalOperator: 'AND' }]);
     setSelectedColumns(['*']);
     setJoins([]);
-    setOrderBy([]);
-    setGroupBy([]);
     setOffset(0);
   };
 
@@ -75,11 +70,11 @@ const QueryBuilderPage: React.FC = () => {
     joins: joins.filter(j => j.sourceTable && j.targetTable && j.sourceColumn && j.targetColumn),
     columns: selectedColumns,
     filters: filters.filter(f => f.column && f.operator && f.value),
-    orderBy: orderBy.filter(o => o.column),
-    groupBy: groupBy.filter(g => g.column),
+    orderBy: [], // Removed for now
+    groupBy: [], // Removed for now
     limit: DEFAULT_LIMIT,
     offset: offset,
-  }), [connectionId, selectedTableName, joins, selectedColumns, filters, orderBy, groupBy, offset]);
+  }), [connectionId, selectedTableName, joins, selectedColumns, filters, offset]);
 
   const { data: queryResult, isFetching: isExecutingQuery, refetch: executeQueryRefetch } = useQuery<QueryResult>({
     queryKey: ['queryResults', queryDefinition],
@@ -179,50 +174,34 @@ const QueryBuilderPage: React.FC = () => {
             {selectedTableName && (
               <div className="space-y-4 p-6 border-2 border-primary/10 rounded-2xl bg-secondary/20">
                 <h4 className="text-xl font-bold flex items-center text-foreground">
-                  <Columns className="w-6 h-6 ms-2 text-primary" /> تحديد الأعمدة والترتيب
+                  <Columns className="w-6 h-6 ms-2 text-primary" /> تحديد الأعمدة
                 </h4>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <div className="space-y-3 p-4 bg-background rounded-xl border border-primary/5">
-                    <Label className="text-lg font-bold">اختيار الأعمدة</Label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                      {tablesInQuery.map(table => (
-                        <div key={table.name} className="space-y-2">
-                          <p className="text-xs font-black text-muted-foreground uppercase">{table.name}</p>
-                          {table.columns.map(col => {
-                            const qName = `${table.name}.${col.name}`;
-                            return (
-                              <div key={col.name} className="flex items-center space-x-2">
-                                <Checkbox 
-                                  id={`col-${qName}`}
-                                  checked={selectedColumns.includes(qName) || selectedColumns.includes('*')}
-                                  onCheckedChange={(checked) => {
-                                    setSelectedColumns(prev => {
-                                      const base = prev.filter(x => x !== '*');
-                                      return checked ? [...base, qName] : base.filter(x => x !== qName);
-                                    });
-                                  }}
-                                />
-                                <Label htmlFor={`col-${qName}`} className="ms-2">{col.name}</Label>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div className="p-4 bg-background rounded-xl border border-primary/5">
-                    <SortAndGroupBuilder
-                      allColumnNames={allAvailableColumns.map(c => c.name)}
-                      orderBy={orderBy}
-                      groupBy={groupBy}
-                      onAddOrderBy={() => setOrderBy(p => [...p, { id: crypto.randomUUID(), column: '', order: 'ASC' }])}
-                      onRemoveOrderBy={(id) => setOrderBy(p => p.filter(x => x.id !== id))}
-                      onUpdateOrderBy={(u) => setOrderBy(p => p.map(x => x.id === u.id ? u : x))}
-                      onAddGroupBy={() => setGroupBy(p => [...p, { id: crypto.randomUUID(), column: '' }])}
-                      onRemoveGroupBy={(id) => setGroupBy(p => p.filter(x => x.id !== id))}
-                      onUpdateGroupBy={(u) => setGroupBy(p => p.map(x => x.id === u.id ? u : x))}
-                    />
+                <div className="space-y-3 p-4 bg-background rounded-xl border border-primary/5">
+                  <Label className="text-lg font-bold">اختيار الأعمدة</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-2">
+                    {tablesInQuery.map(table => (
+                      <div key={table.name} className="space-y-2">
+                        <p className="text-xs font-black text-muted-foreground uppercase">{table.name}</p>
+                        {table.columns.map(col => {
+                          const qName = `${table.name}.${col.name}`;
+                          return (
+                            <div key={col.name} className="flex items-center space-x-2">
+                              <Checkbox 
+                                id={`col-${qName}`}
+                                checked={selectedColumns.includes(qName) || selectedColumns.includes('*')}
+                                onCheckedChange={(checked) => {
+                                  setSelectedColumns(prev => {
+                                    const base = prev.filter(x => x !== '*');
+                                    return checked ? [...base, qName] : base.filter(x => x !== qName);
+                                  });
+                                }}
+                              />
+                              <Label htmlFor={`col-${qName}`} className="ms-2">{col.name}</Label>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
