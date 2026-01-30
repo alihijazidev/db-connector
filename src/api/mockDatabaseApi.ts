@@ -17,11 +17,19 @@ const MOCK_PRODUCTS_COLUMNS: ColumnMetadata[] = [
   { name: "stock", dataType: "INT", isNullable: false },
 ];
 
+const MOCK_ORDERS_COLUMNS: ColumnMetadata[] = [
+  { name: "order_id", dataType: "INT", isNullable: false },
+  { name: "user_id", dataType: "INT", isNullable: false },
+  { name: "product_id", dataType: "INT", isNullable: false },
+  { name: "quantity", dataType: "INT", isNullable: false },
+  { name: "order_date", dataType: "TIMESTAMP", isNullable: false },
+];
+
 const MOCK_METADATA: DatabaseMetadata = {
   tables: [
     { name: "users", columns: MOCK_USERS_COLUMNS },
     { name: "products", columns: MOCK_PRODUCTS_COLUMNS },
-    { name: "orders", columns: [{ name: "order_id", dataType: "INT", isNullable: false }, { name: "user_id", dataType: "INT", isNullable: false }] },
+    { name: "orders", columns: MOCK_ORDERS_COLUMNS },
   ],
 };
 
@@ -34,84 +42,82 @@ const MOCK_USER_DATA = [
   { id: 6, username: "frank", email: "frank@example.com", created_at: "2023-06-10", is_active: true },
   { id: 7, username: "grace", email: "grace@example.com", created_at: "2023-07-15", is_active: true },
   { id: 8, username: "heidi", email: "heidi@example.com", created_at: "2023-08-20", is_active: false },
-  { id: 9, username: "ivan", email: "ivan@example.com", created_at: "2023-09-01", is_active: true },
-  { id: 10, username: "judy", email: "judy@example.com", created_at: "2023-10-05", is_active: true },
-  { id: 11, username: "kyle", email: "kyle@example.com", created_at: "2023-11-10", is_active: false },
-  { id: 12, username: "lisa", email: "lisa@example.com", created_at: "2023-12-15", is_active: true },
+];
+
+const MOCK_PRODUCT_DATA = [
+  { product_id: 101, name: "Laptop Pro", price: 1200, stock: 15 },
+  { product_id: 102, name: "Smartphone X", price: 800, stock: 30 },
+  { product_id: 103, name: "Wireless Buds", price: 150, stock: 100 },
+];
+
+const MOCK_ORDER_DATA = [
+  { order_id: 1, user_id: 1, product_id: 101, quantity: 1, order_date: "2023-10-01" },
+  { order_id: 2, user_id: 1, product_id: 103, quantity: 2, order_date: "2023-10-05" },
+  { order_id: 3, user_id: 2, product_id: 102, quantity: 1, order_date: "2023-10-10" },
+  { order_id: 4, user_id: 4, product_id: 101, quantity: 1, order_date: "2023-11-12" },
+  { order_id: 5, user_id: 6, product_id: 102, quantity: 3, order_date: "2023-11-20" },
 ];
 
 // --- API Functions ---
 
-/**
- * Simulates fetching database metadata (tables and columns) for a given connection.
- * @param connectionId The ID of the active connection.
- */
 export const fetchDatabaseMetadata = (connectionId: string): Promise<DatabaseMetadata> => {
   console.log(`[Mock API] Fetching metadata for connection: ${connectionId}`);
   return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(MOCK_METADATA);
-    }, 800);
+    setTimeout(() => resolve(MOCK_METADATA), 600);
   });
 };
 
-/**
- * Simulates executing a query defined by the user.
- * @param query The structured query definition.
- */
 export const executeQuery = (query: QueryDefinition): Promise<QueryResult> => {
-  console.log(`[Mock API] Executing query on table: ${query.tableName}`);
-  
-  if (query.joins && query.joins.length > 0) {
-    console.warn(`[Mock API] Joins detected (${query.joins.length}). Mock API currently ignores join logic and returns only primary table data.`);
-  }
-  if (query.groupBy && query.groupBy.length > 0) {
-    console.warn(`[Mock API] GROUP BY detected (${query.groupBy.length}). Mock API currently ignores grouping logic.`);
-  }
-  if (query.orderBy && query.orderBy.length > 0) {
-    console.warn(`[Mock API] ORDER BY detected (${query.orderBy.length}). Mock API currently ignores ordering logic.`);
-  }
+  console.log(`[Mock API] Executing query on: ${query.tableName}`, query);
 
   return new Promise((resolve) => {
     setTimeout(() => {
-      let data = MOCK_USER_DATA;
-      
-      // Simple mock filtering logic (only supports '=' operator on 'id' for demonstration)
-      if (query.tableName === 'users' && query.filters.length > 0) {
+      let sourceData: any[] = [];
+      if (query.tableName === 'users') sourceData = MOCK_USER_DATA;
+      else if (query.tableName === 'products') sourceData = MOCK_PRODUCT_DATA;
+      else if (query.tableName === 'orders') sourceData = MOCK_ORDER_DATA;
+
+      let filteredData = [...sourceData];
+
+      // Simple mock filtering logic
+      if (query.filters && query.filters.length > 0) {
         query.filters.forEach(filter => {
-          if (filter.column === 'id' && filter.operator === '=') {
-            const targetId = parseInt(filter.value);
-            data = data.filter(row => row.id === targetId);
+          // Simulation of subquery logic: If user filters users by ID using a subquery from orders
+          if (filter.valueType === 'subquery' && filter.column === 'id' && filter.subquery?.tableName === 'orders') {
+            const userIdsWithOrders = Array.from(new Set(MOCK_ORDER_DATA.map(o => o.user_id)));
+            filteredData = filteredData.filter(row => userIdsWithOrders.includes(row.id));
+          } 
+          // Simulation of literal filtering
+          else if (filter.valueType === 'literal' && filter.value) {
+            const val = filter.value.toLowerCase();
+            filteredData = filteredData.filter(row => {
+              const rowVal = String(row[filter.column] || '').toLowerCase();
+              if (filter.operator === '=') return rowVal === val;
+              if (filter.operator === 'LIKE') return rowVal.includes(val);
+              return true;
+            });
           }
         });
       }
 
-      // Pagination
-      const totalRows = data.length;
-      const paginatedData = data.slice(query.offset, query.offset + query.limit);
-
       // Column selection
-      const selectedColumns = query.columns.includes('*') 
-        ? Object.keys(MOCK_USER_DATA[0] || {}) 
-        : query.columns;
+      const columnsToReturn = query.columns.includes('*') 
+        ? (filteredData.length > 0 ? Object.keys(filteredData[0]) : [])
+        : query.columns.map(c => c.includes('.') ? c.split('.')[1] : c);
 
-      const filteredData = paginatedData.map(row => {
-        const newRow: Record<string, any> = {};
-        selectedColumns.forEach(col => {
-          if (row.hasOwnProperty(col)) {
-            newRow[col] = row[col];
-          }
+      const finalData = filteredData.slice(query.offset, query.offset + query.limit).map(row => {
+        const newRow: any = {};
+        columnsToReturn.forEach(col => {
+          newRow[col] = row[col];
         });
         return newRow;
       });
 
-      const result: QueryResult = {
-        columns: selectedColumns,
-        data: filteredData,
-        totalRows: totalRows,
-      };
-      
-      resolve(result);
-    }, 1500);
+      resolve({
+        columns: columnsToReturn,
+        data: finalData,
+        totalRows: filteredData.length,
+      });
+    }, 1000);
   });
 };
