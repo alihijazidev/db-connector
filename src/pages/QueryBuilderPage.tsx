@@ -61,7 +61,7 @@ const QueryBuilderPage: React.FC = () => {
 
   const handlePrimaryTableChange = (newTable: string) => {
     setSelectedTableName(newTable);
-    setFilters([{ id: crypto.randomUUID(), column: '', operator: '=', value: '', logicalOperator: 'AND' }]);
+    setFilters([{ id: crypto.randomUUID(), column: '', operator: '=', value: '', valueType: 'literal', logicalOperator: 'AND' }]);
     setSelectedColumns(['*']);
     setJoins([]);
     setOffset(0);
@@ -73,7 +73,7 @@ const QueryBuilderPage: React.FC = () => {
     tableName: selectedTableName,
     joins: joins.filter(j => j.sourceTable && j.targetTable && j.sourceColumn && j.targetColumn),
     columns: selectedColumns,
-    filters: filters.filter(f => f.column && f.operator && f.value),
+    filters: filters.filter(f => f.column && f.operator && (f.valueType === 'literal' ? f.value : f.subquery?.column)),
     orderBy: [],
     groupBy: [],
     limit: DEFAULT_LIMIT,
@@ -209,7 +209,7 @@ const QueryBuilderPage: React.FC = () => {
               {/* STEP 3: FILTERS */}
               <QueryBuilderSection 
                 title="الخطوة 3: الشروط (Filters)" 
-                description="قم بتصفية النتائج بناءً على قيم محددة."
+                description="قم بتصفية النتائج بناءً على قيم محددة أو استعلامات من جداول أخرى."
                 icon={<Filter className="w-6 h-6" />}
                 badge={filters.length > 0 ? `${filters.length} شروط` : undefined}
               >
@@ -219,11 +219,12 @@ const QueryBuilderPage: React.FC = () => {
                       key={filter.id}
                       condition={filter}
                       columns={allAvailableColumns}
+                      allTables={metadata?.tables || []} // Passing all tables for subqueries
                       index={index}
                       totalConditions={filters.length}
                       onChange={(u) => setFilters(prev => prev.map(f => f.id === u.id ? u : f))}
                       onRemove={(id) => setFilters(prev => prev.filter(f => f.id !== id))}
-                      onAdd={() => setFilters(p => [...p, { id: crypto.randomUUID(), column: '', operator: '=', value: '', logicalOperator: 'AND' }])}
+                      onAdd={() => setFilters(p => [...p, { id: crypto.randomUUID(), column: '', operator: '=', value: '', valueType: 'literal', logicalOperator: 'AND' }])}
                     />
                   ))}
                 </div>

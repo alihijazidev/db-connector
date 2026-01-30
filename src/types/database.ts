@@ -25,12 +25,19 @@ export interface DatabaseMetadata {
 export type Operator = "=" | "!=" | ">" | "<" | ">=" | "<=" | "LIKE" | "NOT LIKE" | "IN" | "NOT IN";
 export type LogicalOperator = "AND" | "OR";
 
+export interface SubqueryDefinition {
+  tableName: string;
+  column: string;
+}
+
 export interface FilterCondition {
   id: string;
   column: string;
   operator: Operator;
   value: string;
-  logicalOperator: LogicalOperator; // Used for connecting this condition to the next one
+  valueType: 'literal' | 'subquery'; // NEW: To distinguish between manual input and inner query
+  subquery?: SubqueryDefinition; // NEW: Holds the table/column for the inner query
+  logicalOperator: LogicalOperator;
 }
 
 export type JoinType = "INNER JOIN" | "LEFT JOIN" | "RIGHT JOIN" | "FULL OUTER JOIN";
@@ -38,10 +45,10 @@ export type JoinType = "INNER JOIN" | "LEFT JOIN" | "RIGHT JOIN" | "FULL OUTER J
 export interface JoinClause {
   id: string;
   joinType: JoinType;
-  sourceTable: string; // NEW: The table this join originates from (can be primary or a previous join target)
+  sourceTable: string;
   targetTable: string;
-  sourceColumn: string; // Column from the sourceTable
-  targetColumn: string; // Column from the targetTable
+  sourceColumn: string;
+  targetColumn: string;
 }
 
 export type SortOrder = "ASC" | "DESC";
@@ -59,9 +66,9 @@ export interface GroupByClause {
 
 export interface QueryDefinition {
   connectionId: string;
-  tableName: string; // Primary table
+  tableName: string;
   joins: JoinClause[];
-  columns: string[]; // '*' for all
+  columns: string[];
   filters: FilterCondition[];
   orderBy: OrderByClause[];
   groupBy: GroupByClause[];
