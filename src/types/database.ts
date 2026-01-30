@@ -28,6 +28,7 @@ export type LogicalOperator = "AND" | "OR";
 export interface SubqueryDefinition {
   tableName: string;
   column: string;
+  filters: FilterCondition[]; // NEW: Added WHERE clause support for subqueries
 }
 
 export interface FilterCondition {
@@ -35,8 +36,8 @@ export interface FilterCondition {
   column: string;
   operator: Operator;
   value: string;
-  valueType: 'literal' | 'subquery'; // NEW: To distinguish between manual input and inner query
-  subquery?: SubqueryDefinition; // NEW: Holds the table/column for the inner query
+  valueType: 'literal' | 'subquery';
+  subquery?: SubqueryDefinition;
   logicalOperator: LogicalOperator;
 }
 
