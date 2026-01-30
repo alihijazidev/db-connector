@@ -16,6 +16,7 @@ import { DataTable } from '@/components/query/DataTable';
 import { toast } from 'sonner';
 import { JoinClauseRow } from '@/components/query/JoinClauseRow';
 import { FilterConditionRow } from '@/components/query/FilterConditionRow';
+import { Input } from '@/components/ui/input';
 
 const DEFAULT_LIMIT = 10;
 
@@ -27,6 +28,7 @@ const QueryBuilderPage: React.FC = () => {
 
   // --- State ---
   const [selectedTableName, setSelectedTableName] = useState<string>('');
+  const [tableSearchQuery, setTableSearchQuery] = useState<string>('');
   const [selectedColumns, setSelectedColumns] = useState<string[]>(['*']);
   const [filters, setFilters] = useState<FilterCondition[]>([]);
   const [joins, setJoins] = useState<JoinClause[]>([]);
@@ -37,6 +39,13 @@ const QueryBuilderPage: React.FC = () => {
     queryFn: () => fetchDatabaseMetadata(connectionId!),
     enabled: !!connectionId,
   });
+
+  const filteredTables = useMemo(() => {
+    if (!metadata) return [];
+    return metadata.tables.filter(table => 
+      table.name.toLowerCase().includes(tableSearchQuery.toLowerCase())
+    );
+  }, [metadata, tableSearchQuery]);
 
   const tablesInQuery: TableMetadata[] = useMemo(() => {
     if (!metadata || !selectedTableName) return [];
@@ -70,8 +79,8 @@ const QueryBuilderPage: React.FC = () => {
     joins: joins.filter(j => j.sourceTable && j.targetTable && j.sourceColumn && j.targetColumn),
     columns: selectedColumns,
     filters: filters.filter(f => f.column && f.operator && f.value),
-    orderBy: [], // Removed for now
-    groupBy: [], // Removed for now
+    orderBy: [], 
+    groupBy: [], 
     limit: DEFAULT_LIMIT,
     offset: offset,
   }), [connectionId, selectedTableName, joins, selectedColumns, filters, offset]);
@@ -114,16 +123,31 @@ const QueryBuilderPage: React.FC = () => {
               <h4 className="text-xl font-bold flex items-center text-foreground">
                 <TableIcon className="w-6 h-6 ms-2 text-primary" /> الجدول الأساسي
               </h4>
-              <Select value={selectedTableName} onValueChange={handlePrimaryTableChange}>
-                <SelectTrigger className="w-full md:w-1/2 rounded-xl py-6 text-lg border-2">
-                  <SelectValue placeholder="اختر جدولاً..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {metadata?.tables.map(table => (
-                    <SelectItem key={table.name} value={table.name}>{table.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="relative flex-grow max-w-md">
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    placeholder="ابحث عن اسم الجدول..." 
+                    value={tableSearchQuery}
+                    onChange={(e) => setTableSearchQuery(e.target.value)}
+                    className="rounded-xl pr-9 border-2 h-12"
+                  />
+                </div>
+                <Select value={selectedTableName} onValueChange={handlePrimaryTableChange}>
+                  <SelectTrigger className="w-full md:w-1/2 rounded-xl py-6 text-lg border-2">
+                    <SelectValue placeholder="اختر جدولاً..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredTables.length > 0 ? (
+                      filteredTables.map(table => (
+                        <SelectItem key={table.name} value={table.name}>{table.name}</SelectItem>
+                      ))
+                    ) : (
+                      <div className="p-2 text-center text-muted-foreground text-sm">لا توجد جداول بهذا الاسم</div>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             {selectedTableName && (
