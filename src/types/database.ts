@@ -43,12 +43,27 @@ export interface JoinClause {
   targetColumn: string; // Column from the targetTable
 }
 
+export type SortOrder = "ASC" | "DESC";
+
+export interface OrderByClause {
+  id: string;
+  column: string;
+  order: SortOrder;
+}
+
+export interface GroupByClause {
+  id: string;
+  column: string;
+}
+
 export interface QueryDefinition {
   connectionId: string;
   tableName: string; // Primary table
   joins: JoinClause[];
   columns: string[]; // '*' for all
   filters: FilterCondition[];
+  orderBy: OrderByClause[];
+  groupBy: GroupByClause[];
   limit: number;
   offset: number;
 }

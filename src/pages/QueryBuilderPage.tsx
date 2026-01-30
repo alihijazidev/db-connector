@@ -4,10 +4,10 @@ import { useConnection } from '@/context/ConnectionContext';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, Loader2, Search, Table as TableIcon, Columns, Filter, Play, PlusCircle, Link } from 'lucide-react';
+import { AlertTriangle, Loader2, Search, Table as TableIcon, Columns, Filter, Play, PlusCircle, Link, ListOrdered } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchDatabaseMetadata, executeQuery } from '@/api/mockDatabaseApi';
-import { ColumnMetadata, FilterCondition, QueryDefinition, QueryResult, TableMetadata, JoinClause } from '@/types/database';
+import { ColumnMetadata, FilterCondition, QueryDefinition, QueryResult, TableMetadata, JoinClause, OrderByClause, GroupByClause } from '@/types/database';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -16,6 +16,7 @@ import { FilterConditionRow } from '@/components/query/FilterConditionRow';
 import { DataTable } from '@/components/query/DataTable';
 import { toast } from 'sonner';
 import { JoinClauseRow } from '@/components/query/JoinClauseRow';
+import SortAndGroupBuilder from '@/components/query/SortAndGroupBuilder';
 
 const DEFAULT_LIMIT = 10;
 
@@ -30,6 +31,8 @@ const QueryBuilderPage: React.FC = () => {
   const [selectedColumns, setSelectedColumns] = useState<string[]>(['*']);
   const [filters, setFilters] = useState<FilterCondition[]>([]);
   const [joins, setJoins] = useState<JoinClause[]>([]);
+  const [orderBy, setOrderBy] = useState<OrderByClause[]>([]);
+  const [groupBy, setGroupBy] = useState<GroupByClause[]>([]);
   const [offset, setOffset] = useState(0);
 
   // --- Data Fetching (Metadata) ---
@@ -58,10 +61,12 @@ const QueryBuilderPage: React.FC = () => {
       if (!selectedTableName || !metadata.tables.some(t => t.name === selectedTableName)) {
         setSelectedTableName(metadata.tables[0].name);
       }
-      // Reset filters, columns, and joins when table changes
+      // Reset filters, columns, joins, sorting, and grouping when table changes
       setFilters([{ id: crypto.randomUUID(), column: '', operator: '=', value: '', logicalOperator: 'AND' }]);
       setSelectedColumns(['*']);
       setJoins([]);
+      setOrderBy([]);
+      setGroupBy([]);
       setOffset(0);
     }
   }, [metadata, selectedTableName]);
@@ -73,9 +78,11 @@ const QueryBuilderPage: React.FC = () => {
     joins: joins.filter(j => j.targetTable && j.sourceColumn && j.targetColumn), // Only send valid joins
     columns: selectedColumns,
     filters: filters.filter(f => f.column && f.operator && f.value), // Only send valid filters
+    orderBy: orderBy.filter(o => o.column), // Only send valid order by clauses
+    groupBy: groupBy.filter(g => g.column), // Only send valid group by clauses
     limit: DEFAULT_LIMIT,
     offset: offset,
-  }), [connectionId, selectedTableName, joins, selectedColumns, filters, offset]);
+  }), [connectionId, selectedTableName, joins, selectedColumns, filters, orderBy, groupBy, offset]);
 
   const { data: queryResult, isLoading: isExecutingQuery, refetch: executeQueryRefetch } = useQuery<QueryResult>({
     queryKey: ['queryResults', queryDefinition],
@@ -150,6 +157,45 @@ const QueryBuilderPage: React.FC = () => {
     setOffset(0);
     setJoins(prev => prev.filter(j => j.id !== id));
   };
+
+  // --- Order By Handlers ---
+  const handleAddOrderBy = () => {
+    setOffset(0);
+    setOrderBy(prev => [
+      ...prev,
+      { id: crypto.randomUUID(), column: '', order: 'ASC' }
+    ]);
+  };
+
+  const handleRemoveOrderBy = (id: string) => {
+    setOffset(0);
+    setOrderBy(prev => prev.filter(o => o.id !== id));
+  };
+
+  const handleUpdateOrderBy = useCallback((updatedClause: OrderByClause) => {
+    setOffset(0);
+    setOrderBy(prev => prev.map(o => o.id === updatedClause.id ? updatedClause : o));
+  }, []);
+
+  // --- Group By Handlers ---
+  const handleAddGroupBy = () => {
+    setOffset(0);
+    setGroupBy(prev => [
+      ...prev,
+      { id: crypto.randomUUID(), column: '' }
+    ]);
+  };
+
+  const handleRemoveGroupBy = (id: string) => {
+    setOffset(0);
+    setGroupBy(prev => prev.filter(g => g.id !== id));
+  };
+
+  const handleUpdateGroupBy = useCallback((updatedClause: GroupByClause) => {
+    setOffset(0);
+    setGroupBy(prev => prev.map(g => g.id === updatedClause.id ? updatedClause : g));
+  }, []);
+
 
   const handleExecuteQuery = () => {
     if (!selectedTableName) {
@@ -312,7 +358,7 @@ const QueryBuilderPage: React.FC = () => {
             {currentTable && (
               <div className="space-y-4 p-4 border rounded-xl bg-secondary/30">
                 <h4 className="text-xl font-semibold flex items-center text-foreground">
-                  <Filter className="w-5 h-5 mr-2 text-accent-foreground" /> Filter Conditions
+                  <Filter className="w-5 h-5 mr-2 text-accent-foreground" /> Filter Conditions (WHERE)
                 </h4>
                 
                 {filters.length === 0 ? (
@@ -337,8 +383,28 @@ const QueryBuilderPage: React.FC = () => {
                 )}
               </div>
             )}
+            
+            {/* 5. Sort and Grouping */}
+            {currentTable && (
+              <div className="space-y-4 p-4 border rounded-xl bg-secondary/30">
+                <h4 className="text-xl font-semibold flex items-center text-foreground">
+                  <ListOrdered className="w-5 h-5 mr-2 text-accent-foreground" /> Ordering & Grouping
+                </h4>
+                <SortAndGroupBuilder
+                  allColumnNames={allColumnNames}
+                  orderBy={orderBy}
+                  groupBy={groupBy}
+                  onAddOrderBy={handleAddOrderBy}
+                  onRemoveOrderBy={handleRemoveOrderBy}
+                  onUpdateOrderBy={handleUpdateOrderBy}
+                  onAddGroupBy={handleAddGroupBy}
+                  onRemoveGroupBy={handleRemoveGroupBy}
+                  onUpdateGroupBy={handleUpdateGroupBy}
+                />
+              </div>
+            )}
 
-            {/* 5. Execute Button */}
+            {/* 6. Execute Button */}
             <Button 
               onClick={handleExecuteQuery} 
               disabled={!selectedTableName || isExecutingQuery}
@@ -356,7 +422,7 @@ const QueryBuilderPage: React.FC = () => {
               )}
             </Button>
 
-            {/* 6. Results Display */}
+            {/* 7. Results Display */}
             {queryResult && (
               <div className="mt-8">
                 <DataTable 

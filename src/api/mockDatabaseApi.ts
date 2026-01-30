@@ -65,6 +65,12 @@ export const executeQuery = (query: QueryDefinition): Promise<QueryResult> => {
   if (query.joins && query.joins.length > 0) {
     console.warn(`[Mock API] Joins detected (${query.joins.length}). Mock API currently ignores join logic and returns only primary table data.`);
   }
+  if (query.groupBy && query.groupBy.length > 0) {
+    console.warn(`[Mock API] GROUP BY detected (${query.groupBy.length}). Mock API currently ignores grouping logic.`);
+  }
+  if (query.orderBy && query.orderBy.length > 0) {
+    console.warn(`[Mock API] ORDER BY detected (${query.orderBy.length}). Mock API currently ignores ordering logic.`);
+  }
 
   return new Promise((resolve) => {
     setTimeout(() => {
