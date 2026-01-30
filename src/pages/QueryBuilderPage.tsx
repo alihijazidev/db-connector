@@ -112,14 +112,6 @@ const QueryBuilderPage: React.FC = () => {
             </h1>
             <p className="text-muted-foreground mt-2 text-lg">أنت تعمل على اتصال: <span className="font-bold text-primary">{connection.name}</span></p>
           </div>
-          <Button 
-            onClick={handleExecuteQuery} 
-            className="rounded-2xl h-16 px-10 text-xl font-black shadow-xl hover:scale-105 transition-transform group" 
-            disabled={isExecutingQuery || !selectedTableName}
-          >
-            {isExecutingQuery ? <Loader2 className="ms-3 h-6 w-6 animate-spin" /> : <Play className="ms-3 h-6 w-6 fill-current" />}
-            {isExecutingQuery ? "جاري التشغيل..." : "تشغيل الاستعلام"}
-          </Button>
         </header>
 
         <div className="grid grid-cols-1 gap-8">
@@ -219,7 +211,7 @@ const QueryBuilderPage: React.FC = () => {
                       key={filter.id}
                       condition={filter}
                       columns={allAvailableColumns}
-                      allTables={metadata?.tables || []} // Passing all tables for subqueries
+                      allTables={metadata?.tables || []}
                       index={index}
                       totalConditions={filters.length}
                       onChange={(u) => setFilters(prev => prev.map(f => f.id === u.id ? u : f))}
@@ -271,6 +263,18 @@ const QueryBuilderPage: React.FC = () => {
                   ))}
                 </div>
               </QueryBuilderSection>
+
+              {/* Action Button Section */}
+              <div className="flex justify-center py-6">
+                <Button 
+                  onClick={handleExecuteQuery} 
+                  className="rounded-2xl h-16 px-12 text-xl font-black shadow-xl hover:scale-105 transition-transform group bg-primary" 
+                  disabled={isExecutingQuery || !selectedTableName}
+                >
+                  {isExecutingQuery ? <Loader2 className="ms-3 h-6 w-6 animate-spin" /> : <Play className="ms-3 h-6 w-6 fill-current" />}
+                  {isExecutingQuery ? "جاري التشغيل..." : "تشغيل الاستعلام وعرض النتائج"}
+                </Button>
+              </div>
             </>
           )}
         </div>
