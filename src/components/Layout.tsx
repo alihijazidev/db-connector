@@ -17,14 +17,14 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <header className="p-4 border-b flex justify-between items-center bg-card shadow-sm">
-          <h1 className="text-xl font-bold text-primary">DB App</h1>
+          <h1 className="text-xl font-bold text-primary">تطبيق قواعد البيانات</h1>
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild>
               <Button variant="outline" size="icon" className="rounded-xl">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-64 sm:max-w-xs">
+            <SheetContent side="right" className="p-0 w-64 sm:max-w-xs">
               <Sidebar isMobile={true} />
             </SheetContent>
           </Sheet>

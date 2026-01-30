@@ -8,12 +8,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { getDatabaseTypes, useConnection } from "@/context/ConnectionContext";
 import { DatabaseType, ConnectionDetails } from "@/types/database";
 import { Loader2, Database } from "lucide-react";
-import { toast } from "sonner";
 
 const formSchema = z.object({
-  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
+  name: z.string().min(2, { message: "الاسم يجب أن يكون حرفين على الأقل." }),
   type: z.custom<DatabaseType>(),
-  database: z.string().min(1, { message: "Database name is required." }),
+  database: z.string().min(1, { message: "اسم قاعدة البيانات مطلوب." }),
 });
 
 type ConnectionFormValues = Omit<ConnectionDetails, 'id'>;
@@ -46,19 +45,15 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onSuccess }) => 
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-4 bg-card rounded-xl shadow-lg">
-        <h3 className="text-2xl font-bold text-primary flex items-center">
-          <Database className="w-6 h-6 mr-2" /> New Database Connection
-        </h3>
-        
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <FormField
           control={form.control}
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Connection Name</FormLabel>
+              <FormLabel>اسم الاتصال</FormLabel>
               <FormControl>
-                <Input placeholder="My Project DB" {...field} className="rounded-lg border-2 focus:border-primary transition-colors" />
+                <Input placeholder="قاعدة بيانات المشروع" {...field} className="rounded-lg border-2" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -70,17 +65,19 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onSuccess }) => 
           name="type"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Database Type</FormLabel>
+              <FormLabel>نوع قاعدة البيانات</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
-                  <SelectTrigger className="rounded-lg border-2 focus:ring-primary transition-colors">
-                    <SelectValue placeholder="Select a database type" />
+                  <SelectTrigger className="rounded-lg border-2">
+                    <SelectValue placeholder="اختر النوع" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
                   {dbTypes.map((type) => (
                     <SelectItem key={type} value={type}>
-                      {type}
+                      {type === "PostgreSQL" ? "بوستجري إس كيو إل" : 
+                       type === "MySQL" ? "ماي إس كيو إل" : 
+                       type === "SQL Server" ? "إس كيو إل سيرفر" : "إس كيو لايت"}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -95,23 +92,23 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onSuccess }) => 
           name="database"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Database Name</FormLabel>
+              <FormLabel>اسم قاعدة البيانات</FormLabel>
               <FormControl>
-                <Input placeholder="my_database" {...field} className="rounded-lg border-2 focus:border-primary transition-colors" />
+                <Input placeholder="my_db" {...field} className="rounded-lg border-2" />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <Button type="submit" className="w-full rounded-xl py-6 text-lg font-semibold bg-primary hover:bg-primary/90 transition-all" disabled={isSubmitting}>
+        <Button type="submit" className="w-full rounded-xl py-6 text-lg font-semibold" disabled={isSubmitting}>
           {isSubmitting ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Connecting...
+              <Loader2 className="ms-2 h-4 w-4 animate-spin" />
+              جاري الاتصال...
             </>
           ) : (
-            "Test Connection & Save"
+            "اختبار الاتصال والحفظ"
           )}
         </Button>
       </form>

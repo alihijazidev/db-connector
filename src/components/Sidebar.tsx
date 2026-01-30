@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { ConnectionForm } from './ConnectionForm';
 import { useConnection } from '@/context/ConnectionContext';
-import { Database, PlusCircle, ChevronRight, Code } from 'lucide-react';
+import { Database, PlusCircle, ChevronLeft, Code } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 
@@ -19,16 +19,16 @@ const SidebarItem: React.FC<{ connectionName: string, connectionId: string, isAc
     )} onClick={onClick}>
       <div className="flex items-center justify-between">
         <div className="flex items-center">
-          <Database className="w-5 h-5 mr-3 text-primary" />
+          <Database className="w-5 h-5 ms-3 text-primary" />
           <span className="font-medium truncate">{connectionName}</span>
         </div>
-        <ChevronRight className={cn("w-4 h-4 transition-transform", isActive && "rotate-90")} />
+        <ChevronLeft className={cn("w-4 h-4 transition-transform", isActive && "-rotate-90")} />
       </div>
       
       {isActive && (
         <Link to={`/query/${connectionId}`} className="mt-2">
           <Button variant="secondary" size="sm" className="w-full justify-start rounded-lg bg-primary text-primary-foreground hover:bg-primary/80">
-            <Code className="w-4 h-4 mr-2" /> Query Builder
+            <Code className="w-4 h-4 ms-2" /> منشئ الاستعلامات
           </Button>
         </Link>
       )}
@@ -46,22 +46,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobile }) => {
 
   return (
     <div className={cn(
-      "flex flex-col h-full border-r border-sidebar-border bg-sidebar p-4 transition-all duration-300",
+      "flex flex-col h-full border-e border-sidebar-border bg-sidebar p-4 transition-all duration-300",
       isMobile ? "w-full" : "w-64"
     )}>
-      <h2 className="text-2xl font-extrabold text-primary mb-6">DB Connector</h2>
+      <h2 className="text-2xl font-extrabold text-primary mb-6">موصل البيانات</h2>
 
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
         <SheetTrigger asChild>
           <Button className="w-full mb-6 rounded-xl py-6 text-lg font-semibold bg-primary hover:bg-primary/90 transition-all shadow-lg">
-            <PlusCircle className="w-5 h-5 mr-2" /> New Connection
+            <PlusCircle className="w-5 h-5 ms-2" /> اتصال جديد
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="w-full sm:max-w-md bg-background p-0">
+        <SheetContent side="right" className="w-full sm:max-w-md bg-background p-0">
           <SheetHeader className="p-6 border-b">
-            <SheetTitle className="text-2xl font-bold text-primary">Configure Connection</SheetTitle>
+            <SheetTitle className="text-2xl font-bold text-primary">إعداد الاتصال</SheetTitle>
             <SheetDescription>
-              Enter the details for your new database connection.
+              أدخل تفاصيل الاتصال بقاعدة البيانات الجديدة الخاصة بك.
             </SheetDescription>
           </SheetHeader>
           <div className="p-6">
@@ -71,9 +71,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobile }) => {
       </Sheet>
 
       <div className="flex-grow space-y-3 overflow-y-auto">
-        <h3 className="text-lg font-semibold text-sidebar-foreground/80 mb-3 border-b pb-2">Active Connections ({connections.length})</h3>
+        <h3 className="text-lg font-semibold text-sidebar-foreground/80 mb-3 border-b pb-2">الاتصالات النشطة ({connections.length})</h3>
         {connections.length === 0 ? (
-          <p className="text-sm text-sidebar-foreground/60 italic">No connections yet. Click 'New Connection' to start.</p>
+          <p className="text-sm text-sidebar-foreground/60 italic">لا توجد اتصالات بعد. انقر على "اتصال جديد" للبدء.</p>
         ) : (
           connections.map((conn) => (
             <SidebarItem

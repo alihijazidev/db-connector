@@ -11,16 +11,16 @@ const Index = () => {
           <CardHeader className="space-y-4">
             <Zap className="w-16 h-16 mx-auto text-primary animate-pulse" />
             <CardTitle className="text-5xl font-extrabold text-foreground">
-              Dynamic Database Connector
+              موصل قواعد البيانات الذكي
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <p className="text-xl text-muted-foreground max-w-xl mx-auto">
-              Connect to your databases, explore schemas, and build complex queries without writing a single line of SQL.
+              اتصل بقواعد بياناتك، استكشف الجداول، وابنِ استعلامات معقدة بسهولة دون الحاجة لكتابة كود SQL.
             </p>
             <div className="flex justify-center space-x-4">
               <div className="flex items-center text-lg font-medium text-primary">
-                <Database className="w-5 h-5 mr-2" /> Start by adding a connection in the sidebar.
+                <Database className="w-5 h-5 ms-2" /> ابدأ بإضافة اتصال جديد من القائمة الجانبية.
               </div>
             </div>
           </CardContent>

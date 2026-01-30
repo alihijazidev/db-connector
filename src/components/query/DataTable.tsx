@@ -15,30 +15,15 @@ interface DataTableProps {
 
 export const DataTable: React.FC<DataTableProps> = ({ result, limit, offset, onPageChange }) => {
   const { columns, data, totalRows } = result;
-  
   const currentPage = Math.floor(offset / limit) + 1;
   const totalPages = Math.ceil(totalRows / limit);
-
-  const handlePrevious = () => {
-    if (currentPage > 1) {
-      onPageChange(offset - limit);
-    }
-  };
-
-  const handleNext = () => {
-    if (currentPage < totalPages) {
-      onPageChange(offset + limit);
-    }
-  };
 
   if (data.length === 0) {
     return (
       <Alert className="rounded-xl border-yellow-500/50 bg-yellow-500/10">
         <Info className="h-4 w-4 text-yellow-600" />
-        <AlertTitle className="text-yellow-700">No Results Found</AlertTitle>
-        <AlertDescription>
-          The query returned an empty dataset. Try adjusting your filters or selecting a different table.
-        </AlertDescription>
+        <AlertTitle className="text-yellow-700">لم يتم العثور على نتائج</AlertTitle>
+        <AlertDescription>الاستعلام لم يرجع أي بيانات. حاول تعديل الفلاتر أو اختيار جدول مختلف.</AlertDescription>
       </Alert>
     );
   }
@@ -47,7 +32,7 @@ export const DataTable: React.FC<DataTableProps> = ({ result, limit, offset, onP
     <Card className="rounded-2xl shadow-lg overflow-hidden">
       <CardHeader className="p-4 border-b bg-secondary/50">
         <CardTitle className="text-lg font-semibold">
-          Query Results ({data.length} rows displayed / {totalRows} total)
+          نتائج الاستعلام ({data.length} صف معروض / {totalRows} إجمالي)
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0 overflow-x-auto">
@@ -55,7 +40,7 @@ export const DataTable: React.FC<DataTableProps> = ({ result, limit, offset, onP
           <TableHeader className="bg-primary/10 sticky top-0">
             <TableRow>
               {columns.map((col) => (
-                <TableHead key={col} className="font-bold text-primary whitespace-nowrap">
+                <TableHead key={col} className="font-bold text-primary whitespace-nowrap text-right">
                   {col}
                 </TableHead>
               ))}
@@ -65,7 +50,7 @@ export const DataTable: React.FC<DataTableProps> = ({ result, limit, offset, onP
             {data.map((row, rowIndex) => (
               <TableRow key={rowIndex} className="hover:bg-secondary/30 transition-colors">
                 {columns.map((col) => (
-                  <TableCell key={col} className="text-sm">
+                  <TableCell key={col} className="text-sm text-right">
                     {String(row[col] ?? 'NULL')}
                   </TableCell>
                 ))}
@@ -74,26 +59,25 @@ export const DataTable: React.FC<DataTableProps> = ({ result, limit, offset, onP
           </TableBody>
         </Table>
       </CardContent>
-      
       {totalRows > limit && (
         <div className="p-4 border-t flex justify-center">
           <Pagination>
             <PaginationContent>
               <PaginationItem>
                 <PaginationPrevious 
-                  onClick={handlePrevious} 
+                  onClick={() => onPageChange(offset - limit)} 
                   className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  title="السابق"
                 />
               </PaginationItem>
               <PaginationItem>
-                <span className="px-4 py-2 text-sm font-medium text-muted-foreground">
-                  Page {currentPage} of {totalPages}
-                </span>
+                <span className="px-4 py-2 text-sm font-medium">صفحة {currentPage} من {totalPages}</span>
               </PaginationItem>
               <PaginationItem>
                 <PaginationNext 
-                  onClick={handleNext} 
+                  onClick={() => onPageChange(offset + limit)} 
                   className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  title="التالي"
                 />
               </PaginationItem>
             </PaginationContent>
