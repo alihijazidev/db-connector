@@ -43,51 +43,72 @@ const QueryBuilderPage: React.FC = () => {
   });
 
   // --- Derived State ---
-  const currentTable: TableMetadata | undefined = useMemo(() => {
-    return metadata?.tables.find(t => t.name === selectedTableName);
-  }, [metadata, selectedTableName]);
+  
+  // All tables currently in the query (primary + targets of valid joins)
+  const tablesInQuery: TableMetadata[] = useMemo(() => {
+    if (!metadata || !selectedTableName) return [];
+    const primary = metadata.tables.find(t => t.name === selectedTableName);
+    if (!primary) return [];
 
-  const allColumnNames: string[] = useMemo(() => {
-    return currentTable?.columns.map(c => c.name) || [];
-  }, [currentTable]);
+    const joined = joins
+      .map(j => metadata.tables.find(t => t.name === j.targetTable))
+      .filter((t): t is TableMetadata => !!t);
 
-  const allColumnMetadata: ColumnMetadata[] = useMemo(() => {
-    return currentTable?.columns || [];
-  }, [currentTable]);
+    // Filter out duplicates (though schema usually prevents this)
+    return [primary, ...joined].reduce((acc: TableMetadata[], curr) => {
+      if (!acc.find(t => t.name === curr.name)) acc.push(curr);
+      return acc;
+    }, []);
+  }, [metadata, selectedTableName, joins]);
 
-  // List of tables currently included in the query (Primary table + all joined tables)
+  // Names of tables available to be a source for a join
   const availableSourceTables: string[] = useMemo(() => {
-    if (!selectedTableName) return [];
-    const joinedTables = joins.map(j => j.targetTable).filter(Boolean);
-    return [selectedTableName, ...joinedTables];
-  }, [selectedTableName, joins]);
+    return tablesInQuery.map(t => t.name);
+  }, [tablesInQuery]);
 
+  // All columns from all tables in the query, qualified as table.column
+  const allAvailableColumns: ColumnMetadata[] = useMemo(() => {
+    return tablesInQuery.flatMap(table => 
+      table.columns.map(col => ({
+        ...col,
+        name: `${table.name}.${col.name}`
+      }))
+    );
+  }, [tablesInQuery]);
 
-  // Initialize table selection once metadata loads and reset state when table changes
+  const allAvailableColumnNames: string[] = useMemo(() => {
+    return allAvailableColumns.map(c => c.name);
+  }, [allAvailableColumns]);
+
+  // Reset logic when primary table changes
   React.useEffect(() => {
     if (metadata && metadata.tables.length > 0) {
       if (!selectedTableName || !metadata.tables.some(t => t.name === selectedTableName)) {
         setSelectedTableName(metadata.tables[0].name);
       }
-      // Reset filters, columns, joins, sorting, and grouping when table changes
-      setFilters([{ id: crypto.randomUUID(), column: '', operator: '=', value: '', logicalOperator: 'AND' }]);
-      setSelectedColumns(['*']);
-      setJoins([]);
-      setOrderBy([]);
-      setGroupBy([]);
-      setOffset(0);
     }
-  }, [metadata, selectedTableName]);
+  }, [metadata]);
+
+  // Handle full reset when primary table changes
+  const handlePrimaryTableChange = (newTable: string) => {
+    setSelectedTableName(newTable);
+    setFilters([{ id: crypto.randomUUID(), column: '', operator: '=', value: '', logicalOperator: 'AND' }]);
+    setSelectedColumns(['*']);
+    setJoins([]);
+    setOrderBy([]);
+    setGroupBy([]);
+    setOffset(0);
+  };
 
   // --- Query Execution Definition ---
   const queryDefinition: QueryDefinition = useMemo(() => ({
     connectionId: connectionId!,
     tableName: selectedTableName,
-    joins: joins.filter(j => j.sourceTable && j.targetTable && j.sourceColumn && j.targetColumn), // Only send valid joins
+    joins: joins.filter(j => j.sourceTable && j.targetTable && j.sourceColumn && j.targetColumn),
     columns: selectedColumns,
-    filters: filters.filter(f => f.column && f.operator && f.value), // Only send valid filters
-    orderBy: orderBy.filter(o => o.column), // Only send valid order by clauses
-    groupBy: groupBy.filter(g => g.column), // Only send valid group by clauses
+    filters: filters.filter(f => f.column && f.operator && f.value),
+    orderBy: orderBy.filter(o => o.column),
+    groupBy: groupBy.filter(g => g.column),
     limit: DEFAULT_LIMIT,
     offset: offset,
   }), [connectionId, selectedTableName, joins, selectedColumns, filters, orderBy, groupBy, offset]);
@@ -96,7 +117,7 @@ const QueryBuilderPage: React.FC = () => {
     queryKey: ['queryResults', queryDefinition],
     queryFn: () => executeQuery(queryDefinition),
     enabled: !!selectedTableName && !!connectionId,
-    staleTime: 0, // Always refetch when definition changes
+    staleTime: 0,
   });
 
   // --- Handlers ---
@@ -105,20 +126,15 @@ const QueryBuilderPage: React.FC = () => {
     setOffset(0);
     setSelectedColumns(prev => {
       if (columnName === '*') {
-        // If toggling 'Select All'
         return isChecked ? ['*'] : [];
       }
       
-      // If toggling an individual column
       let current = prev.includes('*') ? [] : prev;
 
       if (isChecked) {
-        // Add column
         return [...current, columnName];
       } else {
-        // Remove column
         const newCols = current.filter(c => c !== columnName);
-        // If removing the last selected column, default back to '*'
         return newCols.length === 0 ? ['*'] : newCols;
       }
     });
@@ -149,14 +165,12 @@ const QueryBuilderPage: React.FC = () => {
 
   const handleAddJoin = () => {
     setOffset(0);
-    // Default the source table to the primary table if it exists
-    const defaultSourceTable = selectedTableName || '';
     setJoins(prev => [
       ...prev, 
       { 
         id: crypto.randomUUID(), 
         joinType: 'INNER JOIN', 
-        sourceTable: defaultSourceTable, // Initialize with primary table
+        sourceTable: selectedTableName,
         targetTable: '', 
         sourceColumn: '', 
         targetColumn: '' 
@@ -169,7 +183,6 @@ const QueryBuilderPage: React.FC = () => {
     setJoins(prev => prev.filter(j => j.id !== id));
   };
 
-  // --- Order By Handlers ---
   const handleAddOrderBy = () => {
     setOffset(0);
     setOrderBy(prev => [
@@ -188,7 +201,6 @@ const QueryBuilderPage: React.FC = () => {
     setOrderBy(prev => prev.map(o => o.id === updatedClause.id ? updatedClause : o));
   }, []);
 
-  // --- Group By Handlers ---
   const handleAddGroupBy = () => {
     setOffset(0);
     setGroupBy(prev => [
@@ -207,13 +219,12 @@ const QueryBuilderPage: React.FC = () => {
     setGroupBy(prev => prev.map(g => g.id === updatedClause.id ? updatedClause : g));
   }, []);
 
-
   const handleExecuteQuery = () => {
     if (!selectedTableName) {
       toast.warning("Please select a table first.");
       return;
     }
-    setOffset(0); // Reset offset on manual execution
+    setOffset(0);
     executeQueryRefetch();
   };
 
@@ -221,8 +232,6 @@ const QueryBuilderPage: React.FC = () => {
     setOffset(newOffset);
     executeQueryRefetch();
   };
-
-  // --- Error/Loading States ---
 
   if (!connection) {
     return (
@@ -263,34 +272,35 @@ const QueryBuilderPage: React.FC = () => {
     );
   }
 
-  // --- Render UI ---
-
   return (
     <Layout>
       <div className="space-y-8">
-        <Card className="shadow-xl rounded-2xl border-primary/20">
-          <CardHeader className="bg-primary/5 rounded-t-2xl border-b p-4">
+        <Card className="shadow-xl rounded-2xl border-primary/20 bg-card/50 backdrop-blur-sm">
+          <CardHeader className="bg-primary/5 rounded-t-2xl border-b p-6">
             <CardTitle className="text-3xl font-extrabold text-primary flex items-center">
-              <Search className="w-6 h-6 mr-3" /> Query Builder: {connection.name}
+              <Search className="w-8 h-8 mr-3" /> Query Builder: {connection.name}
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-6 space-y-6">
+          <CardContent className="p-8 space-y-10">
             
-            {/* 1. Table Selection */}
-            <div className="space-y-3">
-              <h4 className="text-xl font-semibold flex items-center text-foreground">
-                <TableIcon className="w-5 h-5 mr-2 text-accent-foreground" /> Select Primary Table
-              </h4>
+            {/* 1. Primary Table Selection */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xl font-bold flex items-center text-foreground">
+                  <TableIcon className="w-6 h-6 mr-2 text-primary" /> Primary Table
+                </h4>
+                <span className="text-xs font-semibold px-2 py-1 bg-primary/10 text-primary rounded-full uppercase tracking-wider">Required</span>
+              </div>
               <Select
                 value={selectedTableName}
-                onValueChange={(val) => setSelectedTableName(val)}
+                onValueChange={handlePrimaryTableChange}
               >
-                <SelectTrigger className="w-full md:w-1/2 rounded-xl py-6 text-base border-2 focus:ring-primary transition-colors">
-                  <SelectValue placeholder="Choose a table..." />
+                <SelectTrigger className="w-full md:w-1/2 rounded-xl py-6 text-lg border-2 border-primary/20 focus:ring-primary transition-all hover:border-primary/40 bg-background">
+                  <SelectValue placeholder="Choose a starting table..." />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-xl">
                   {metadata?.tables.map(table => (
-                    <SelectItem key={table.name} value={table.name}>
+                    <SelectItem key={table.name} value={table.name} className="text-base">
                       {table.name}
                     </SelectItem>
                   ))}
@@ -298,111 +308,117 @@ const QueryBuilderPage: React.FC = () => {
               </Select>
             </div>
 
-            {/* 2. Join Conditions */}
-            {currentTable && (
-              <div className="space-y-4 p-4 border rounded-xl bg-secondary/30">
-                <h4 className="text-xl font-semibold flex items-center text-foreground">
-                  <Link className="w-5 h-5 mr-2 text-accent-foreground" /> Join Tables
+            {/* 2. Join Relationships */}
+            {selectedTableName && (
+              <div className="space-y-4 p-6 border-2 border-primary/10 rounded-2xl bg-secondary/20 shadow-inner">
+                <h4 className="text-xl font-bold flex items-center text-foreground">
+                  <Link className="w-6 h-6 mr-2 text-primary" /> Relationships (Joins)
                 </h4>
-                
-                {joins.length === 0 ? (
-                  <Button onClick={handleAddJoin} variant="outline" className="rounded-xl border-dashed border-primary/50 text-primary hover:bg-primary/10">
-                    <PlusCircle className="w-4 h-4 mr-2" /> Add Join Clause
+                <div className="space-y-4">
+                  {joins.map((join) => (
+                    <JoinClauseRow
+                      key={join.id}
+                      join={join}
+                      allTables={metadata?.tables || []}
+                      availableSourceTables={availableSourceTables}
+                      onChange={handleJoinChange}
+                      onRemove={handleRemoveJoin}
+                    />
+                  ))}
+                  <Button onClick={handleAddJoin} variant="outline" className="w-full md:w-auto rounded-xl border-dashed border-primary/40 text-primary hover:bg-primary/5 py-6">
+                    <PlusCircle className="w-5 h-5 mr-2" /> Link Another Table
                   </Button>
-                ) : (
-                  <div className="space-y-3">
-                    {joins.map((join) => (
-                      <JoinClauseRow
-                        key={join.id}
-                        join={join}
-                        allTables={metadata?.tables || []}
-                        availableSourceTables={availableSourceTables}
-                        onChange={handleJoinChange}
-                        onRemove={handleRemoveJoin}
-                      />
-                    ))}
-                    <Button onClick={handleAddJoin} variant="outline" size="sm" className="rounded-xl border-dashed border-primary/50 text-primary hover:bg-primary/10">
-                        <PlusCircle className="w-4 h-4 mr-2" /> Add Another Join
-                    </Button>
-                  </div>
-                )}
+                </div>
               </div>
             )}
 
-            {/* 3. Column Selection */}
-            {currentTable && (
-              <div className="space-y-3 p-4 border rounded-xl bg-secondary/30">
-                <h4 className="text-xl font-semibold flex items-center text-foreground">
-                  <Columns className="w-5 h-5 mr-2 text-accent-foreground" /> Choose Columns
+            {/* 3. Column Selection - Grouped by Table */}
+            {selectedTableName && (
+              <div className="space-y-4 p-6 border-2 border-primary/10 rounded-2xl bg-secondary/20">
+                <h4 className="text-xl font-bold flex items-center text-foreground">
+                  <Columns className="w-6 h-6 mr-2 text-primary" /> Select Columns
                 </h4>
-                <div className="flex flex-wrap gap-4">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="select-all"
-                      checked={selectedColumns.includes('*')}
-                      onCheckedChange={(checked) => handleToggleColumn('*', !!checked)}
-                      className="rounded-md data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
-                    />
-                    <Label htmlFor="select-all" className="font-medium text-base">
-                      Select All (*)
-                    </Label>
-                  </div>
-                  
-                  {allColumnNames.map(col => (
-                    <div key={col} className="flex items-center space-x-2" title={`Type: ${allColumnMetadata.find(c => c.name === col)?.dataType}`}>
-                      <Checkbox
-                        id={`col-${col}`}
-                        checked={selectedColumns.includes(col) && !selectedColumns.includes('*')}
-                        onCheckedChange={(checked) => handleToggleColumn(col, !!checked)}
-                        className="rounded-md data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
-                      />
-                      <Label htmlFor={`col-${col}`} className="text-sm">
-                        {col}
-                      </Label>
+                
+                <div className="flex items-center space-x-3 pb-4 border-b border-primary/10">
+                  <Checkbox
+                    id="select-all"
+                    checked={selectedColumns.includes('*')}
+                    onCheckedChange={(checked) => handleToggleColumn('*', !!checked)}
+                    className="w-5 h-5 rounded-md"
+                  />
+                  <Label htmlFor="select-all" className="font-bold text-lg text-primary cursor-pointer">
+                    All Columns (*)
+                  </Label>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-4">
+                  {tablesInQuery.map(table => (
+                    <div key={table.name} className="space-y-3 p-4 bg-background rounded-xl shadow-sm border border-primary/5">
+                      <div className="flex items-center space-x-2 border-b pb-2 mb-2">
+                        <TableIcon className="w-4 h-4 text-muted-foreground" />
+                        <span className="font-bold text-sm uppercase tracking-wider text-muted-foreground">{table.name}</span>
+                      </div>
+                      <div className="space-y-2">
+                        {table.columns.map(col => {
+                          const qualifiedName = `${table.name}.${col.name}`;
+                          return (
+                            <div key={qualifiedName} className="flex items-center space-x-3 group">
+                              <Checkbox
+                                id={`col-${qualifiedName}`}
+                                checked={selectedColumns.includes(qualifiedName) && !selectedColumns.includes('*')}
+                                onCheckedChange={(checked) => handleToggleColumn(qualifiedName, !!checked)}
+                                className="w-4 h-4 rounded group-hover:border-primary transition-colors"
+                              />
+                              <Label htmlFor={`col-${qualifiedName}`} className="text-sm cursor-pointer group-hover:text-primary transition-colors flex justify-between w-full">
+                                <span>{col.name}</span>
+                                <span className="text-[10px] text-muted-foreground opacity-50">{col.dataType}</span>
+                              </Label>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* 4. Filter Conditions */}
-            {currentTable && (
-              <div className="space-y-4 p-4 border rounded-xl bg-secondary/30">
-                <h4 className="text-xl font-semibold flex items-center text-foreground">
-                  <Filter className="w-5 h-5 mr-2 text-accent-foreground" /> Filter Conditions (WHERE)
+            {/* 4. Filters - All Available Columns */}
+            {selectedTableName && (
+              <div className="space-y-4 p-6 border-2 border-primary/10 rounded-2xl bg-secondary/20">
+                <h4 className="text-xl font-bold flex items-center text-foreground">
+                  <Filter className="w-6 h-6 mr-2 text-primary" /> Filters (WHERE)
                 </h4>
-                
-                {filters.length === 0 ? (
-                  <Button onClick={handleAddFilter} variant="outline" className="rounded-xl border-dashed border-primary/50 text-primary hover:bg-primary/10">
-                    <PlusCircle className="w-4 h-4 mr-2" /> Add First Condition
-                  </Button>
-                ) : (
-                  <div className="space-y-2">
-                    {filters.map((condition, index) => (
-                      <FilterConditionRow
-                        key={condition.id}
-                        condition={condition}
-                        columns={allColumnMetadata}
-                        index={index}
-                        totalConditions={filters.length}
-                        onChange={handleFilterChange}
-                        onRemove={handleRemoveFilter}
-                        onAdd={handleAddFilter}
-                      />
-                    ))}
-                  </div>
-                )}
+                <div className="space-y-3">
+                  {filters.map((condition, index) => (
+                    <FilterConditionRow
+                      key={condition.id}
+                      condition={condition}
+                      columns={allAvailableColumns}
+                      index={index}
+                      totalConditions={filters.length}
+                      onChange={handleFilterChange}
+                      onRemove={handleRemoveFilter}
+                      onAdd={handleAddFilter}
+                    />
+                  ))}
+                  {filters.length === 0 && (
+                    <Button onClick={handleAddFilter} variant="outline" className="rounded-xl border-dashed border-primary/40 text-primary hover:bg-primary/5">
+                      <PlusCircle className="w-4 h-4 mr-2" /> Add Filter Logic
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
             
-            {/* 5. Sort and Grouping */}
-            {currentTable && (
-              <div className="space-y-4 p-4 border rounded-xl bg-secondary/30">
-                <h4 className="text-xl font-semibold flex items-center text-foreground">
-                  <ListOrdered className="w-5 h-5 mr-2 text-accent-foreground" /> Ordering & Grouping
+            {/* 5. Sort and Grouping - All Available Columns */}
+            {selectedTableName && (
+              <div className="space-y-4 p-6 border-2 border-primary/10 rounded-2xl bg-secondary/20">
+                <h4 className="text-xl font-bold flex items-center text-foreground">
+                  <ListOrdered className="w-6 h-6 mr-2 text-primary" /> Ordering & Aggregation
                 </h4>
                 <SortAndGroupBuilder
-                  allColumnNames={allColumnNames}
+                  allColumnNames={allAvailableColumnNames}
                   orderBy={orderBy}
                   groupBy={groupBy}
                   onAddOrderBy={handleAddOrderBy}
@@ -415,27 +431,29 @@ const QueryBuilderPage: React.FC = () => {
               </div>
             )}
 
-            {/* 6. Execute Button */}
-            <Button 
-              onClick={handleExecuteQuery} 
-              disabled={!selectedTableName || isExecutingQuery}
-              className="w-full rounded-xl py-6 text-lg font-bold bg-destructive hover:bg-destructive/90 transition-all shadow-lg"
-            >
-              {isExecutingQuery ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Executing Query...
-                </>
-              ) : (
-                <>
-                  <Play className="mr-2 h-5 w-5" /> Execute Query
-                </>
-              )}
-            </Button>
+            {/* 6. Execution Call to Action */}
+            <div className="pt-6">
+              <Button 
+                onClick={handleExecuteQuery} 
+                disabled={!selectedTableName || isExecutingQuery}
+                className="w-full rounded-2xl py-8 text-xl font-black bg-primary hover:bg-primary/90 transition-all shadow-2xl hover:shadow-primary/20 group"
+              >
+                {isExecutingQuery ? (
+                  <>
+                    <Loader2 className="mr-3 h-6 w-6 animate-spin" />
+                    Crunching Data...
+                  </>
+                ) : (
+                  <>
+                    <Play className="mr-3 h-6 w-6 group-hover:scale-125 transition-transform" /> RUN QUERY
+                  </>
+                )}
+              </Button>
+            </div>
 
             {/* 7. Results Display */}
             {queryResult && (
-              <div className="mt-8">
+              <div className="mt-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <DataTable 
                   result={queryResult} 
                   limit={DEFAULT_LIMIT} 
