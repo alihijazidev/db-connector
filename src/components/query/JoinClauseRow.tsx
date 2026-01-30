@@ -1,9 +1,8 @@
 import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { X, Link } from 'lucide-react';
+import { X } from 'lucide-react';
 import { JoinClause, JoinType, TableMetadata } from '@/types/database';
-import { cn } from '@/lib/utils';
 
 interface JoinClauseRowProps {
   join: JoinClause;
@@ -14,10 +13,10 @@ interface JoinClauseRowProps {
 }
 
 const JOIN_TYPES: { value: JoinType, label: string, description: string }[] = [
-  { value: "INNER JOIN", label: "Match Only", description: "Only include rows where there is a match in both tables." },
-  { value: "LEFT JOIN", label: "Include All Primary", description: "Include all rows from the primary table, and matching rows from the joined table." },
-  { value: "RIGHT JOIN", label: "Include All Joined", description: "Include all rows from the joined table, and matching rows from the primary table." },
-  { value: "FULL OUTER JOIN", label: "Include All", description: "Include all rows from both tables, matching where possible." },
+  { value: "INNER JOIN", label: "ربط داخلي (Inner Join)", description: "تضمين الصفوف التي لها تطابق في كلا الجدولين فقط." },
+  { value: "LEFT JOIN", label: "ربط يساري (Left Join)", description: "تضمين كافة صفوف الجدول الأساسي، مع الصفوف المتطابقة من الجدول المنضم." },
+  { value: "RIGHT JOIN", label: "ربط يميني (Right Join)", description: "تضمين كافة صفوف الجدول المنضم، مع الصفوف المتطابقة من الجدول الأساسي." },
+  { value: "FULL OUTER JOIN", label: "ربط خارجي كامل (Full Join)", description: "تضمين كافة الصفوف من كلا الجدولين، مع المطابقة حيثما أمكن." },
 ];
 
 export const JoinClauseRow: React.FC<JoinClauseRowProps> = ({
@@ -42,13 +41,13 @@ export const JoinClauseRow: React.FC<JoinClauseRowProps> = ({
     <div className="flex flex-wrap items-center gap-3 p-3 border rounded-xl bg-background shadow-sm">
       
       {/* Join Type Selector */}
-      <div className="w-32">
+      <div className="w-44">
         <Select
           value={join.joinType}
           onValueChange={(val) => handleFieldChange('joinType', val as JoinType)}
         >
           <SelectTrigger className="w-full rounded-lg">
-            <SelectValue placeholder="Join Type" />
+            <SelectValue placeholder="نوع الربط" />
           </SelectTrigger>
           <SelectContent>
             {JOIN_TYPES.map(type => (
@@ -67,7 +66,7 @@ export const JoinClauseRow: React.FC<JoinClauseRowProps> = ({
           onValueChange={(val) => handleFieldChange('targetTable', val)}
         >
           <SelectTrigger className="w-full rounded-lg">
-            <SelectValue placeholder="Target Table" />
+            <SelectValue placeholder="الجدول الهدف" />
           </SelectTrigger>
           <SelectContent>
             {allTables.map(table => (
@@ -77,7 +76,7 @@ export const JoinClauseRow: React.FC<JoinClauseRowProps> = ({
         </Select>
       </div>
 
-      <span className="text-sm font-medium text-muted-foreground">ON</span>
+      <span className="text-sm font-medium text-muted-foreground">على</span>
 
       {/* Source Table Selector (The table already in the query) */}
       <div className="flex-1 min-w-[120px]">
@@ -87,7 +86,7 @@ export const JoinClauseRow: React.FC<JoinClauseRowProps> = ({
           disabled={availableSourceTables.length === 0}
         >
           <SelectTrigger className="w-full rounded-lg">
-            <SelectValue placeholder="Source Table" />
+            <SelectValue placeholder="الجدول المصدر" />
           </SelectTrigger>
           <SelectContent>
             {availableSourceTables.map(table => (
@@ -107,7 +106,7 @@ export const JoinClauseRow: React.FC<JoinClauseRowProps> = ({
           disabled={sourceTableColumns.length === 0}
         >
           <SelectTrigger className="w-full rounded-lg">
-            <SelectValue placeholder="Source Column" />
+            <SelectValue placeholder="العمود المصدر" />
           </SelectTrigger>
           <SelectContent>
             {sourceTableColumns.map(col => (
@@ -127,7 +126,7 @@ export const JoinClauseRow: React.FC<JoinClauseRowProps> = ({
           disabled={targetTableColumns.length === 0}
         >
           <SelectTrigger className="w-full rounded-lg">
-            <SelectValue placeholder="Target Column" />
+            <SelectValue placeholder="العمود الهدف" />
           </SelectTrigger>
           <SelectContent>
             {targetTableColumns.map(col => (
@@ -143,7 +142,7 @@ export const JoinClauseRow: React.FC<JoinClauseRowProps> = ({
         size="icon" 
         onClick={() => onRemove(join.id)}
         className="rounded-full flex-shrink-0"
-        title="Remove Join"
+        title="حذف العلاقة"
       >
         <X className="w-4 h-4" />
       </Button>
