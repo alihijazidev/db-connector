@@ -3,14 +3,15 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useConnection } from "@/context/ConnectionContext";
+import { useConnection, getAvailableDatabases } from "@/context/ConnectionContext";
 import { ConnectionDetails } from "@/types/database";
 import { Loader2 } from "lucide-react";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "الاسم يجب أن يكون حرفين على الأقل." }),
-  database: z.string().min(1, { message: "اسم قاعدة البيانات مطلوب." }),
+  database: z.string().min(1, { message: "يرجى اختيار قاعدة بيانات." }),
 });
 
 type ConnectionFormValues = {
@@ -24,19 +25,19 @@ interface ConnectionFormProps {
 
 export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onSuccess }) => {
   const { addConnection } = useConnection();
+  const availableDatabases = getAvailableDatabases();
 
   const form = useForm<ConnectionFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      database: "mydb",
+      database: availableDatabases[0],
     },
   });
 
   const { isSubmitting } = form.formState;
 
   const onSubmit = async (values: ConnectionFormValues) => {
-    // نرسل النوع كـ PostgreSQL بشكل افتراضي
     const success = await addConnection({
       ...values,
       type: "PostgreSQL",
@@ -56,7 +57,7 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onSuccess }) => 
             <FormItem>
               <FormLabel>اسم الاتصال</FormLabel>
               <FormControl>
-                <Input placeholder="قاعدة بيانات المشروع" {...field} className="rounded-lg border-2" />
+                <Input placeholder="مثال: قاعدة بيانات الإنتاج" {...field} className="rounded-lg border-2" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -68,10 +69,21 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onSuccess }) => 
           name="database"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>اسم قاعدة البيانات</FormLabel>
-              <FormControl>
-                <Input placeholder="my_db" {...field} className="rounded-lg border-2" />
-              </FormControl>
+              <FormLabel>اختر قاعدة البيانات</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger className="rounded-lg border-2">
+                    <SelectValue placeholder="اختر من القائمة..." />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {availableDatabases.map((db) => (
+                    <SelectItem key={db} value={db}>
+                      {db}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}

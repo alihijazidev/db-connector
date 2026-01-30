@@ -12,13 +12,12 @@ interface ConnectionContextType {
 const ConnectionContext = createContext<ConnectionContextType | undefined>(undefined);
 
 const MOCK_DB_TYPES: DatabaseType[] = ["PostgreSQL", "MySQL", "SQL Server", "SQLite"];
+const MOCK_DATABASES = ["production_db", "staging_db", "analytics_warehouse", "user_data_store", "test_env"];
 const STORAGE_KEY = 'db_connections';
 
-// Mock function to simulate backend connection test
 const simulateConnectionTest = (details: Omit<ConnectionDetails, 'id'>): Promise<boolean> => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      // Simulate failure if the name contains 'fail'
       if (details.name.toLowerCase().includes('fail')) {
         resolve(false);
       } else {
@@ -28,7 +27,6 @@ const simulateConnectionTest = (details: Omit<ConnectionDetails, 'id'>): Promise
   });
 };
 
-// Function to load connections from localStorage
 const loadConnections = (): ConnectionDetails[] => {
   if (typeof window !== 'undefined') {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -44,7 +42,6 @@ const loadConnections = (): ConnectionDetails[] => {
   return [];
 };
 
-// Function to save connections to localStorage
 const saveConnections = (connections: ConnectionDetails[]) => {
   if (typeof window !== 'undefined') {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(connections));
@@ -55,13 +52,12 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
   const [connections, setConnections] = useState<ConnectionDetails[]>(loadConnections);
   const [activeConnectionId, setActiveConnectionId] = useState<string | null>(null);
 
-  // Effect to save connections whenever the list changes
   useEffect(() => {
     saveConnections(connections);
   }, [connections]);
 
   const addConnection = async (details: Omit<ConnectionDetails, 'id'>): Promise<boolean> => {
-    const loadingToastId = toast.loading(`Attempting to connect to ${details.name}...`);
+    const loadingToastId = toast.loading(`جاري محاولة الاتصال بـ ${details.name}...`);
     
     const isSuccessful = await simulateConnectionTest(details);
 
@@ -74,10 +70,10 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
       };
       setConnections((prev) => [...prev, newConnection]);
       setActiveConnectionId(newConnection.id);
-      toast.success(`Successfully connected to ${details.name}!`);
+      toast.success(`تم الاتصال بـ ${details.name} بنجاح!`);
       return true;
     } else {
-      toast.error(`Failed to connect to ${details.name}. Check credentials.`);
+      toast.error(`فشل الاتصال بـ ${details.name}. تحقق من البيانات.`);
       return false;
     }
   };
@@ -102,3 +98,4 @@ export const useConnection = () => {
 };
 
 export const getDatabaseTypes = () => MOCK_DB_TYPES;
+export const getAvailableDatabases = () => MOCK_DATABASES;
