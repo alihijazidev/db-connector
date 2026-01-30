@@ -3,10 +3,10 @@ import { useParams } from 'react-router-dom';
 import { useConnection } from '@/context/ConnectionContext';
 import { Layout } from '@/components/Layout';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Search, Table as TableIcon, Columns, Play, PlusCircle, Link, Filter, ListOrdered, CheckCircle2, Code, ChevronDown, Check } from 'lucide-react';
+import { Loader2, Table as TableIcon, Columns, Play, PlusCircle, Link, Filter, CheckCircle2, Code, ChevronDown, Check } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchDatabaseMetadata, executeQuery } from '@/api/mockDatabaseApi';
-import { ColumnMetadata, FilterCondition, QueryDefinition, QueryResult, TableMetadata, JoinClause, OrderByClause, GroupByClause } from '@/types/database';
+import { ColumnMetadata, FilterCondition, QueryDefinition, QueryResult, TableMetadata, JoinClause } from '@/types/database';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -15,7 +15,6 @@ import { toast } from 'sonner';
 import { JoinClauseRow } from '@/components/query/JoinClauseRow';
 import { FilterConditionRow } from '@/components/query/FilterConditionRow';
 import { QueryBuilderSection } from '@/components/query/QueryBuilderSection';
-import SortAndGroupBuilder from '@/components/query/SortAndGroupBuilder';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -34,8 +33,6 @@ const QueryBuilderPage: React.FC = () => {
   const [selectedColumns, setSelectedColumns] = useState<string[]>(['*']);
   const [filters, setFilters] = useState<FilterCondition[]>([]);
   const [joins, setJoins] = useState<JoinClause[]>([]);
-  const [orderBy, setOrderBy] = useState<OrderByClause[]>([]);
-  const [groupBy, setGroupBy] = useState<GroupByClause[]>([]);
   const [offset, setOffset] = useState(0);
 
   const { data: metadata, isLoading: isLoadingMetadata } = useQuery({
@@ -67,8 +64,6 @@ const QueryBuilderPage: React.FC = () => {
     setFilters([{ id: crypto.randomUUID(), column: '', operator: '=', value: '', logicalOperator: 'AND' }]);
     setSelectedColumns(['*']);
     setJoins([]);
-    setOrderBy([]);
-    setGroupBy([]);
     setOffset(0);
     setIsTableSelectorOpen(false);
   };
@@ -79,11 +74,11 @@ const QueryBuilderPage: React.FC = () => {
     joins: joins.filter(j => j.sourceTable && j.targetTable && j.sourceColumn && j.targetColumn),
     columns: selectedColumns,
     filters: filters.filter(f => f.column && f.operator && f.value),
-    orderBy: orderBy.filter(o => o.column),
-    groupBy: groupBy.filter(g => g.column),
+    orderBy: [],
+    groupBy: [],
     limit: DEFAULT_LIMIT,
     offset: offset,
-  }), [connectionId, selectedTableName, joins, selectedColumns, filters, orderBy, groupBy, offset]);
+  }), [connectionId, selectedTableName, joins, selectedColumns, filters, offset]);
 
   const { data: queryResult, isFetching: isExecutingQuery, refetch: executeQueryRefetch } = useQuery<QueryResult>({
     queryKey: ['queryResults', queryDefinition],
@@ -273,27 +268,6 @@ const QueryBuilderPage: React.FC = () => {
                       </div>
                     </div>
                   ))}
-                </div>
-              </QueryBuilderSection>
-
-              {/* STEP 5: SORTING & GROUPING */}
-              <QueryBuilderSection 
-                title="الخطوة 5: الترتيب والتجميع" 
-                description="نظّم مخرجات الاستعلام بالترتيب أو التجميع."
-                icon={<ListOrdered className="w-6 h-6" />}
-              >
-                <div className="max-w-2xl">
-                  <SortAndGroupBuilder 
-                    allColumnNames={allAvailableColumns.map(c => c.name)}
-                    orderBy={orderBy}
-                    groupBy={groupBy}
-                    onAddOrderBy={() => setOrderBy(p => [...p, { id: crypto.randomUUID(), column: '', order: 'ASC' }])}
-                    onRemoveOrderBy={(id) => setOrderBy(p => p.filter(o => o.id !== id))}
-                    onUpdateOrderBy={(u) => setOrderBy(p => p.map(o => o.id === u.id ? u : o))}
-                    onAddGroupBy={() => setGroupBy(p => [...p, { id: crypto.randomUUID(), column: '' }])}
-                    onRemoveGroupBy={(id) => setGroupBy(p => p.filter(g => g.id !== id))}
-                    onUpdateGroupBy={(u) => setGroupBy(p => p.map(g => g.id === u.id ? u : g))}
-                  />
                 </div>
               </QueryBuilderSection>
             </>
