@@ -82,22 +82,28 @@ const QueryBuilderPage: React.FC = () => {
 
   // --- Handlers ---
 
-  const handleColumnToggle = (columnName: string) => {
+  const handleToggleColumn = (columnName: string, isChecked: boolean) => {
     setOffset(0);
     setSelectedColumns(prev => {
       if (columnName === '*') {
-        return ['*'];
+        // If toggling 'Select All'
+        // If checked, select all (*). If unchecked, clear selection.
+        return isChecked ? ['*'] : [];
       }
       
-      // If '*' is selected, remove it first
-      const current = prev.includes('*') ? [] : prev;
+      // If toggling an individual column
+      
+      // 1. Start with the current selection, removing '*' if present
+      let current = prev.includes('*') ? [] : prev;
 
-      if (current.includes(columnName)) {
-        const newCols = current.filter(c => c !== columnName);
-        // If no columns are left, default back to '*'
-        return newCols.length === 0 ? ['*'] : newCols;
-      } else {
+      if (isChecked) {
+        // Add column
         return [...current, columnName];
+      } else {
+        // Remove column
+        const newCols = current.filter(c => c !== columnName);
+        // If removing the last selected column, default back to '*'
+        return newCols.length === 0 ? ['*'] : newCols;
       }
     });
   };
@@ -221,7 +227,7 @@ const QueryBuilderPage: React.FC = () => {
                     <Checkbox
                       id="select-all"
                       checked={selectedColumns.includes('*')}
-                      onCheckedChange={() => handleColumnToggle('*')}
+                      onCheckedChange={(checked) => handleToggleColumn('*', !!checked)}
                       className="rounded-md data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
                     />
                     <Label htmlFor="select-all" className="font-medium text-base">
@@ -234,8 +240,7 @@ const QueryBuilderPage: React.FC = () => {
                       <Checkbox
                         id={`col-${col}`}
                         checked={selectedColumns.includes(col) && !selectedColumns.includes('*')}
-                        onCheckedChange={() => handleColumnToggle(col)}
-                        disabled={selectedColumns.includes('*')}
+                        onCheckedChange={(checked) => handleToggleColumn(col, !!checked)}
                         className="rounded-md data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
                       />
                       <Label htmlFor={`col-${col}`} className="text-sm">
