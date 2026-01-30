@@ -33,9 +33,20 @@ export interface FilterCondition {
   logicalOperator: LogicalOperator; // Used for connecting this condition to the next one
 }
 
+export type JoinType = "INNER JOIN" | "LEFT JOIN" | "RIGHT JOIN" | "FULL OUTER JOIN";
+
+export interface JoinClause {
+  id: string;
+  joinType: JoinType;
+  targetTable: string;
+  sourceColumn: string; // Column from the primary table
+  targetColumn: string; // Column from the targetTable
+}
+
 export interface QueryDefinition {
   connectionId: string;
-  tableName: string;
+  tableName: string; // Primary table
+  joins: JoinClause[];
   columns: string[]; // '*' for all
   filters: FilterCondition[];
   limit: number;

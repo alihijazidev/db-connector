@@ -62,6 +62,10 @@ export const fetchDatabaseMetadata = (connectionId: string): Promise<DatabaseMet
 export const executeQuery = (query: QueryDefinition): Promise<QueryResult> => {
   console.log(`[Mock API] Executing query on table: ${query.tableName}`);
   
+  if (query.joins && query.joins.length > 0) {
+    console.warn(`[Mock API] Joins detected (${query.joins.length}). Mock API currently ignores join logic and returns only primary table data.`);
+  }
+
   return new Promise((resolve) => {
     setTimeout(() => {
       let data = MOCK_USER_DATA;

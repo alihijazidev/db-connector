@@ -4,10 +4,10 @@ import { useConnection } from '@/context/ConnectionContext';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, Loader2, Search, Table as TableIcon, Columns, Filter, Play, PlusCircle } from 'lucide-react';
+import { AlertTriangle, Loader2, Search, Table as TableIcon, Columns, Filter, Play, PlusCircle, Link } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchDatabaseMetadata, executeQuery } from '@/api/mockDatabaseApi';
-import { ColumnMetadata, FilterCondition, QueryDefinition, QueryResult, TableMetadata } from '@/types/database';
+import { ColumnMetadata, FilterCondition, QueryDefinition, QueryResult, TableMetadata, JoinClause } from '@/types/database';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { FilterConditionRow } from '@/components/query/FilterConditionRow';
 import { DataTable } from '@/components/query/DataTable';
 import { toast } from 'sonner';
+import { JoinClauseRow } from '@/components/query/JoinClauseRow';
 
 const DEFAULT_LIMIT = 10;
 
@@ -28,6 +29,7 @@ const QueryBuilderPage: React.FC = () => {
   const [selectedTableName, setSelectedTableName] = useState<string>('');
   const [selectedColumns, setSelectedColumns] = useState<string[]>(['*']);
   const [filters, setFilters] = useState<FilterCondition[]>([]);
+  const [joins, setJoins] = useState<JoinClause[]>([]);
   const [offset, setOffset] = useState(0);
 
   // --- Data Fetching (Metadata) ---
@@ -56,9 +58,10 @@ const QueryBuilderPage: React.FC = () => {
       if (!selectedTableName || !metadata.tables.some(t => t.name === selectedTableName)) {
         setSelectedTableName(metadata.tables[0].name);
       }
-      // Reset filters and columns when table changes
+      // Reset filters, columns, and joins when table changes
       setFilters([{ id: crypto.randomUUID(), column: '', operator: '=', value: '', logicalOperator: 'AND' }]);
       setSelectedColumns(['*']);
+      setJoins([]);
       setOffset(0);
     }
   }, [metadata, selectedTableName]);
@@ -67,11 +70,12 @@ const QueryBuilderPage: React.FC = () => {
   const queryDefinition: QueryDefinition = useMemo(() => ({
     connectionId: connectionId!,
     tableName: selectedTableName,
+    joins: joins.filter(j => j.targetTable && j.sourceColumn && j.targetColumn), // Only send valid joins
     columns: selectedColumns,
     filters: filters.filter(f => f.column && f.operator && f.value), // Only send valid filters
     limit: DEFAULT_LIMIT,
     offset: offset,
-  }), [connectionId, selectedTableName, selectedColumns, filters, offset]);
+  }), [connectionId, selectedTableName, joins, selectedColumns, filters, offset]);
 
   const { data: queryResult, isLoading: isExecutingQuery, refetch: executeQueryRefetch } = useQuery<QueryResult>({
     queryKey: ['queryResults', queryDefinition],
@@ -87,13 +91,10 @@ const QueryBuilderPage: React.FC = () => {
     setSelectedColumns(prev => {
       if (columnName === '*') {
         // If toggling 'Select All'
-        // If checked, select all (*). If unchecked, clear selection.
         return isChecked ? ['*'] : [];
       }
       
       // If toggling an individual column
-      
-      // 1. Start with the current selection, removing '*' if present
       let current = prev.includes('*') ? [] : prev;
 
       if (isChecked) {
@@ -124,6 +125,30 @@ const QueryBuilderPage: React.FC = () => {
   const handleRemoveFilter = (id: string) => {
     setOffset(0);
     setFilters(prev => prev.filter(f => f.id !== id));
+  };
+
+  const handleJoinChange = useCallback((updatedJoin: JoinClause) => {
+    setOffset(0);
+    setJoins(prev => prev.map(j => j.id === updatedJoin.id ? updatedJoin : j));
+  }, []);
+
+  const handleAddJoin = () => {
+    setOffset(0);
+    setJoins(prev => [
+      ...prev, 
+      { 
+        id: crypto.randomUUID(), 
+        joinType: 'INNER JOIN', 
+        targetTable: '', 
+        sourceColumn: '', 
+        targetColumn: '' 
+      }
+    ]);
+  };
+
+  const handleRemoveJoin = (id: string) => {
+    setOffset(0);
+    setJoins(prev => prev.filter(j => j.id !== id));
   };
 
   const handleExecuteQuery = () => {
@@ -197,7 +222,7 @@ const QueryBuilderPage: React.FC = () => {
             {/* 1. Table Selection */}
             <div className="space-y-3">
               <h4 className="text-xl font-semibold flex items-center text-foreground">
-                <TableIcon className="w-5 h-5 mr-2 text-accent-foreground" /> Select Table
+                <TableIcon className="w-5 h-5 mr-2 text-accent-foreground" /> Select Primary Table
               </h4>
               <Select
                 value={selectedTableName}
@@ -216,7 +241,38 @@ const QueryBuilderPage: React.FC = () => {
               </Select>
             </div>
 
-            {/* 2. Column Selection */}
+            {/* 2. Join Conditions */}
+            {currentTable && (
+              <div className="space-y-4 p-4 border rounded-xl bg-secondary/30">
+                <h4 className="text-xl font-semibold flex items-center text-foreground">
+                  <Link className="w-5 h-5 mr-2 text-accent-foreground" /> Join Tables
+                </h4>
+                
+                {joins.length === 0 ? (
+                  <Button onClick={handleAddJoin} variant="outline" className="rounded-xl border-dashed border-primary/50 text-primary hover:bg-primary/10">
+                    <PlusCircle className="w-4 h-4 mr-2" /> Add Join Clause
+                  </Button>
+                ) : (
+                  <div className="space-y-3">
+                    {joins.map((join) => (
+                      <JoinClauseRow
+                        key={join.id}
+                        join={join}
+                        allTables={metadata?.tables || []}
+                        primaryTableColumns={allColumnNames}
+                        onChange={handleJoinChange}
+                        onRemove={handleRemoveJoin}
+                      />
+                    ))}
+                    <Button onClick={handleAddJoin} variant="outline" size="sm" className="rounded-xl border-dashed border-primary/50 text-primary hover:bg-primary/10">
+                        <PlusCircle className="w-4 h-4 mr-2" /> Add Another Join
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 3. Column Selection */}
             {currentTable && (
               <div className="space-y-3 p-4 border rounded-xl bg-secondary/30">
                 <h4 className="text-xl font-semibold flex items-center text-foreground">
@@ -252,7 +308,7 @@ const QueryBuilderPage: React.FC = () => {
               </div>
             )}
 
-            {/* 3. Filter Conditions */}
+            {/* 4. Filter Conditions */}
             {currentTable && (
               <div className="space-y-4 p-4 border rounded-xl bg-secondary/30">
                 <h4 className="text-xl font-semibold flex items-center text-foreground">
@@ -282,7 +338,7 @@ const QueryBuilderPage: React.FC = () => {
               </div>
             )}
 
-            {/* 4. Execute Button */}
+            {/* 5. Execute Button */}
             <Button 
               onClick={handleExecuteQuery} 
               disabled={!selectedTableName || isExecutingQuery}
@@ -300,7 +356,7 @@ const QueryBuilderPage: React.FC = () => {
               )}
             </Button>
 
-            {/* 5. Results Display */}
+            {/* 6. Results Display */}
             {queryResult && (
               <div className="mt-8">
                 <DataTable 
