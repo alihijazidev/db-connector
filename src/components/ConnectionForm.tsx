@@ -6,21 +6,17 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { getDatabaseTypes, useConnection } from "@/context/ConnectionContext";
-import { DatabaseType } from "@/types/database";
+import { DatabaseType, ConnectionDetails } from "@/types/database";
 import { Loader2, Database } from "lucide-react";
 import { toast } from "sonner";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   type: z.custom<DatabaseType>(),
-  host: z.string().min(1, { message: "Host is required." }),
-  port: z.coerce.number().int().positive().min(1).max(65535),
   database: z.string().min(1, { message: "Database name is required." }),
-  username: z.string().min(1, { message: "Username is required." }),
-  password: z.string().min(1, { message: "Password is required." }),
 });
 
-type ConnectionFormValues = z.infer<typeof formSchema>;
+type ConnectionFormValues = Omit<ConnectionDetails, 'id'>;
 
 interface ConnectionFormProps {
   onSuccess: () => void;
@@ -35,11 +31,7 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onSuccess }) => 
     defaultValues: {
       name: "",
       type: dbTypes[0],
-      host: "localhost",
-      port: 5432,
       database: "mydb",
-      username: "user",
-      password: "password",
     },
   });
 
@@ -98,35 +90,6 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onSuccess }) => 
           )}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="host"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Host</FormLabel>
-                <FormControl>
-                  <Input placeholder="localhost" {...field} className="rounded-lg border-2 focus:border-primary transition-colors" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="port"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Port</FormLabel>
-                <FormControl>
-                  <Input type="number" placeholder="5432" {...field} onChange={(e) => field.onChange(e.target.value)} className="rounded-lg border-2 focus:border-primary transition-colors" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
         <FormField
           control={form.control}
           name="database"
@@ -140,35 +103,6 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onSuccess }) => 
             </FormItem>
           )}
         />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="username"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Username</FormLabel>
-                <FormControl>
-                  <Input placeholder="postgres" {...field} className="rounded-lg border-2 focus:border-primary transition-colors" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="password"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Password</FormLabel>
-                <FormControl>
-                  <Input type="password" placeholder="********" {...field} className="rounded-lg border-2 focus:border-primary transition-colors" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
 
         <Button type="submit" className="w-full rounded-xl py-6 text-lg font-semibold bg-primary hover:bg-primary/90 transition-all" disabled={isSubmitting}>
           {isSubmitting ? (

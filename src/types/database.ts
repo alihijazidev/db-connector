@@ -4,12 +4,7 @@ export interface ConnectionDetails {
   id: string;
   name: string;
   type: DatabaseType;
-  host: string;
-  port: number;
   database: string;
-  username: string;
-  // Note: Password is not stored/passed on the frontend state for security reasons, 
-  // but is required for the initial connection attempt.
 }
 
 export interface ColumnMetadata {

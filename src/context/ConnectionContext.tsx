@@ -17,8 +17,8 @@ const MOCK_DB_TYPES: DatabaseType[] = ["PostgreSQL", "MySQL", "SQL Server", "SQL
 const simulateConnectionTest = (details: Omit<ConnectionDetails, 'id'>): Promise<boolean> => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      // Simulate failure for specific credentials (e.g., username 'fail')
-      if (details.username === 'fail' || details.port === 1111) {
+      // Simulate failure if the name contains 'fail'
+      if (details.name.toLowerCase().includes('fail')) {
         resolve(false);
       } else {
         resolve(true);
