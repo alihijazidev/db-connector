@@ -4,7 +4,7 @@ import { useConnection } from '@/context/ConnectionContext';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Search, Table as TableIcon, Columns, Play, PlusCircle, Link } from 'lucide-react';
+import { Loader2, Search, Table as TableIcon, Columns, Play, PlusCircle, Link, Filter } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchDatabaseMetadata, executeQuery } from '@/api/mockDatabaseApi';
 import { ColumnMetadata, FilterCondition, QueryDefinition, QueryResult, TableMetadata, JoinClause, OrderByClause, GroupByClause } from '@/types/database';
@@ -15,6 +15,8 @@ import { Label } from '@/components/ui/label';
 import { DataTable } from '@/components/query/DataTable';
 import { toast } from 'sonner';
 import { JoinClauseRow } from '@/components/query/JoinClauseRow';
+import { FilterConditionRow } from '@/components/query/FilterConditionRow';
+import SortAndGroupBuilder from '@/components/query/SortAndGroupBuilder';
 
 const DEFAULT_LIMIT = 10;
 
@@ -33,7 +35,6 @@ const QueryBuilderPage: React.FC = () => {
   const [groupBy, setGroupBy] = useState<GroupByClause[]>([]);
   const [offset, setOffset] = useState(0);
 
-  // جلب البيانات الوصفية (الميتاداتا) يظل تلقائياً لتهيئة الواجهة
   const { data: metadata, isLoading: isLoadingMetadata } = useQuery({
     queryKey: ['dbMetadata', connectionId],
     queryFn: () => fetchDatabaseMetadata(connectionId!),
@@ -45,11 +46,18 @@ const QueryBuilderPage: React.FC = () => {
     const primary = metadata.tables.find(t => t.name === selectedTableName);
     if (!primary) return [];
     const joined = joins.map(j => metadata.tables.find(t => t.name === j.targetTable)).filter((t): t is TableMetadata => !!t);
-    return [primary, ...joined].reduce((acc: TableMetadata[], curr) => {
-      if (!acc.find(t => t.name === curr.name)) acc.push(curr);
-      return acc;
-    }, []);
+    const result = [primary];
+    joined.forEach(t => {
+      if (!result.find(existing => existing.name === t.name)) result.push(t);
+    });
+    return result;
   }, [metadata, selectedTableName, joins]);
+
+  const allAvailableColumns: ColumnMetadata[] = useMemo(() => {
+    return tablesInQuery.flatMap(table => 
+      table.columns.map(col => ({ ...col, name: `${table.name}.${col.name}` }))
+    );
+  }, [tablesInQuery]);
 
   const handlePrimaryTableChange = (newTable: string) => {
     setSelectedTableName(newTable);
@@ -73,7 +81,6 @@ const QueryBuilderPage: React.FC = () => {
     offset: offset,
   }), [connectionId, selectedTableName, joins, selectedColumns, filters, orderBy, groupBy, offset]);
 
-  // تعطيل الجلب التلقائي باستخدام enabled: false
   const { data: queryResult, isFetching: isExecutingQuery, refetch: executeQueryRefetch } = useQuery<QueryResult>({
     queryKey: ['queryResults', queryDefinition],
     queryFn: () => executeQuery(queryDefinition),
@@ -89,10 +96,8 @@ const QueryBuilderPage: React.FC = () => {
     executeQueryRefetch();
   };
 
-  // معالجة تغيير الصفحة - نحتاج لتنفيذ الاستعلام مرة أخرى عند تغيير الأوفست
   const handlePageChange = (newOffset: number) => {
     setOffset(newOffset);
-    // نستخدم setTimeout لضمان تحديث الـ offset في الـ queryDefinition قبل إعادة الجلب
     setTimeout(() => executeQueryRefetch(), 0);
   };
 
@@ -142,7 +147,7 @@ const QueryBuilderPage: React.FC = () => {
                       onRemove={(id) => setJoins(prev => prev.filter(j => j.id !== id))}
                     />
                   ))}
-                  <Button onClick={() => setJoins(p => [...p, { id: crypto.randomUUID(), joinType: 'INNER JOIN', sourceTable: selectedTableName, targetTable: '', sourceColumn: '', targetColumn: '' }])} variant="outline" className="w-full md:w-auto rounded-xl py-6">
+                  <Button onClick={() => setJoins(p => [...p, { id: crypto.randomUUID(), joinType: 'INNER JOIN', sourceTable: selectedTableName, targetTable: '', sourceColumn: '', targetColumn: '' }])} variant="outline" className="w-full md:w-auto rounded-xl">
                     <PlusCircle className="w-5 h-5 ms-2" /> إضافة علاقة مع جدول آخر
                   </Button>
                 </div>
@@ -152,31 +157,73 @@ const QueryBuilderPage: React.FC = () => {
             {selectedTableName && (
               <div className="space-y-4 p-6 border-2 border-primary/10 rounded-2xl bg-secondary/20">
                 <h4 className="text-xl font-bold flex items-center text-foreground">
-                  <Columns className="w-6 h-6 ms-2 text-primary" /> تحديد الأعمدة
+                  <Filter className="w-6 h-6 ms-2 text-primary" /> الشروط (Filters)
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {tablesInQuery.map(table => (
-                    <div key={table.name} className="space-y-3 p-4 bg-background rounded-xl border border-primary/5">
-                      <div className="flex items-center space-x-2 border-b pb-2 mb-2">
-                        <span className="font-bold text-sm text-muted-foreground uppercase">{table.name}</span>
-                      </div>
-                      <div className="space-y-2">
-                        {table.columns.map(col => (
-                          <div key={col.name} className="flex items-center space-x-3 group">
-                            <Checkbox 
-                              id={`${table.name}-${col.name}`} 
-                              checked={selectedColumns.includes(`${table.name}.${col.name}`) || selectedColumns.includes('*')}
-                              onCheckedChange={(checked) => {
-                                const qName = `${table.name}.${col.name}`;
-                                setSelectedColumns(prev => checked ? [...prev.filter(x => x !== '*'), qName] : prev.filter(x => x !== qName));
-                              }}
-                            />
-                            <Label htmlFor={`${table.name}-${col.name}`} className="ms-2 cursor-pointer">{col.name}</Label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                <div className="space-y-3">
+                  {filters.map((filter, index) => (
+                    <FilterConditionRow
+                      key={filter.id}
+                      condition={filter}
+                      columns={allAvailableColumns}
+                      index={index}
+                      totalConditions={filters.length}
+                      onChange={(u) => setFilters(prev => prev.map(f => f.id === u.id ? u : f))}
+                      onRemove={(id) => setFilters(prev => prev.filter(f => f.id !== id))}
+                      onAdd={() => setFilters(p => [...p, { id: crypto.randomUUID(), column: '', operator: '=', value: '', logicalOperator: 'AND' }])}
+                    />
                   ))}
+                </div>
+              </div>
+            )}
+
+            {selectedTableName && (
+              <div className="space-y-4 p-6 border-2 border-primary/10 rounded-2xl bg-secondary/20">
+                <h4 className="text-xl font-bold flex items-center text-foreground">
+                  <Columns className="w-6 h-6 ms-2 text-primary" /> تحديد الأعمدة والترتيب
+                </h4>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div className="space-y-3 p-4 bg-background rounded-xl border border-primary/5">
+                    <Label className="text-lg font-bold">اختيار الأعمدة</Label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                      {tablesInQuery.map(table => (
+                        <div key={table.name} className="space-y-2">
+                          <p className="text-xs font-black text-muted-foreground uppercase">{table.name}</p>
+                          {table.columns.map(col => {
+                            const qName = `${table.name}.${col.name}`;
+                            return (
+                              <div key={col.name} className="flex items-center space-x-2">
+                                <Checkbox 
+                                  id={`col-${qName}`}
+                                  checked={selectedColumns.includes(qName) || selectedColumns.includes('*')}
+                                  onCheckedChange={(checked) => {
+                                    setSelectedColumns(prev => {
+                                      const base = prev.filter(x => x !== '*');
+                                      return checked ? [...base, qName] : base.filter(x => x !== qName);
+                                    });
+                                  }}
+                                />
+                                <Label htmlFor={`col-${qName}`} className="ms-2">{col.name}</Label>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 bg-background rounded-xl border border-primary/5">
+                    <SortAndGroupBuilder
+                      allColumnNames={allAvailableColumns.map(c => c.name)}
+                      orderBy={orderBy}
+                      groupBy={groupBy}
+                      onAddOrderBy={() => setOrderBy(p => [...p, { id: crypto.randomUUID(), column: '', order: 'ASC' }])}
+                      onRemoveOrderBy={(id) => setOrderBy(p => p.filter(x => x.id !== id))}
+                      onUpdateOrderBy={(u) => setOrderBy(p => p.map(x => x.id === u.id ? u : x))}
+                      onAddGroupBy={() => setGroupBy(p => [...p, { id: crypto.randomUUID(), column: '' }])}
+                      onRemoveGroupBy={(id) => setGroupBy(p => p.filter(x => x.id !== id))}
+                      onUpdateGroupBy={(u) => setGroupBy(p => p.map(x => x.id === u.id ? u : x))}
+                    />
+                  </div>
                 </div>
               </div>
             )}
