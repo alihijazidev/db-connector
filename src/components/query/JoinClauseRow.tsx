@@ -13,7 +13,12 @@ interface JoinClauseRowProps {
   onRemove: (id: string) => void;
 }
 
-const JOIN_TYPES: JoinType[] = ["INNER JOIN", "LEFT JOIN", "RIGHT JOIN", "FULL OUTER JOIN"];
+const JOIN_TYPES: { value: JoinType, label: string, description: string }[] = [
+  { value: "INNER JOIN", label: "Match Only", description: "Only include rows where there is a match in both tables." },
+  { value: "LEFT JOIN", label: "Include All Primary", description: "Include all rows from the primary table, and matching rows from the joined table." },
+  { value: "RIGHT JOIN", label: "Include All Joined", description: "Include all rows from the joined table, and matching rows from the primary table." },
+  { value: "FULL OUTER JOIN", label: "Include All", description: "Include all rows from both tables, matching where possible." },
+];
 
 export const JoinClauseRow: React.FC<JoinClauseRowProps> = ({
   join,
@@ -29,6 +34,8 @@ export const JoinClauseRow: React.FC<JoinClauseRowProps> = ({
   const targetTableMetadata = allTables.find(t => t.name === join.targetTable);
   const targetTableColumns = targetTableMetadata?.columns.map(c => c.name) || [];
 
+  const currentJoinType = JOIN_TYPES.find(t => t.value === join.joinType);
+
   return (
     <div className="flex flex-wrap items-center gap-3 p-3 border rounded-xl bg-background shadow-sm">
       
@@ -43,7 +50,9 @@ export const JoinClauseRow: React.FC<JoinClauseRowProps> = ({
           </SelectTrigger>
           <SelectContent>
             {JOIN_TYPES.map(type => (
-              <SelectItem key={type} value={type}>{type}</SelectItem>
+              <SelectItem key={type.value} value={type.value} title={type.description}>
+                {type.label}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
