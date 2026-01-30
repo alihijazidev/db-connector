@@ -15,8 +15,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   if (isMobile) {
     return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <header className="p-4 border-b flex justify-between items-center bg-card shadow-sm">
+      <div className="h-screen flex flex-col bg-background">
+        <header className="p-4 border-b flex justify-between items-center bg-card shadow-sm flex-shrink-0">
           <h1 className="text-xl font-bold text-primary">تطبيق قواعد البيانات</h1>
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild>
@@ -37,11 +37,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   }
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <aside className="flex-shrink-0">
+    <div className="flex h-screen overflow-hidden bg-background">
+      <aside className="flex-shrink-0 h-full border-e border-sidebar-border overflow-hidden">
         <Sidebar isMobile={false} />
       </aside>
-      <main className="flex-grow p-8 overflow-y-auto">
+      <main className="flex-grow p-8 overflow-y-auto h-full">
         {children}
       </main>
     </div>
