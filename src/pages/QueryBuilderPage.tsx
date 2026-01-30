@@ -2,13 +2,11 @@ import React, { useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useConnection } from '@/context/ConnectionContext';
 import { Layout } from '@/components/Layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Search, Table as TableIcon, Columns, Play, PlusCircle, Link, Filter, ListOrdered, CheckCircle2, Code } from 'lucide-react';
+import { Loader2, Search, Table as TableIcon, Columns, Play, PlusCircle, Link, Filter, ListOrdered, CheckCircle2, Code, ChevronDown, Check } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchDatabaseMetadata, executeQuery } from '@/api/mockDatabaseApi';
 import { ColumnMetadata, FilterCondition, QueryDefinition, QueryResult, TableMetadata, JoinClause, OrderByClause, GroupByClause } from '@/types/database';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -16,10 +14,11 @@ import { DataTable } from '@/components/query/DataTable';
 import { toast } from 'sonner';
 import { JoinClauseRow } from '@/components/query/JoinClauseRow';
 import { FilterConditionRow } from '@/components/query/FilterConditionRow';
-import { Input } from '@/components/ui/input';
 import { QueryBuilderSection } from '@/components/query/QueryBuilderSection';
 import SortAndGroupBuilder from '@/components/query/SortAndGroupBuilder';
 import { cn } from '@/lib/utils';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 
 const DEFAULT_LIMIT = 10;
 
@@ -31,7 +30,7 @@ const QueryBuilderPage: React.FC = () => {
 
   // --- State ---
   const [selectedTableName, setSelectedTableName] = useState<string>('');
-  const [tableSearchQuery, setTableSearchQuery] = useState<string>('');
+  const [isTableSelectorOpen, setIsTableSelectorOpen] = useState(false);
   const [selectedColumns, setSelectedColumns] = useState<string[]>(['*']);
   const [filters, setFilters] = useState<FilterCondition[]>([]);
   const [joins, setJoins] = useState<JoinClause[]>([]);
@@ -44,13 +43,6 @@ const QueryBuilderPage: React.FC = () => {
     queryFn: () => fetchDatabaseMetadata(connectionId!),
     enabled: !!connectionId,
   });
-
-  const filteredTables = useMemo(() => {
-    if (!metadata) return [];
-    return metadata.tables.filter(table => 
-      table.name.toLowerCase().includes(tableSearchQuery.toLowerCase())
-    );
-  }, [metadata, tableSearchQuery]);
 
   const tablesInQuery: TableMetadata[] = useMemo(() => {
     if (!metadata || !selectedTableName) return [];
@@ -78,6 +70,7 @@ const QueryBuilderPage: React.FC = () => {
     setOrderBy([]);
     setGroupBy([]);
     setOffset(0);
+    setIsTableSelectorOpen(false);
   };
 
   const queryDefinition: QueryDefinition = useMemo(() => ({
@@ -139,31 +132,56 @@ const QueryBuilderPage: React.FC = () => {
           {/* STEP 1: SELECT TABLE */}
           <QueryBuilderSection 
             title="الخطوة 1: الجدول الأساسي" 
-            description="اختر الجدول الرئيسي الذي تريد سحب البيانات منه."
+            description="ابحث عن الجدول الرئيسي واختره لبدء الاستعلام."
             icon={<TableIcon className="w-6 h-6" />}
             badge={selectedTableName ? "تم الاختيار" : "مطلوب"}
             className={selectedTableName ? "bg-primary/5" : "bg-card"}
           >
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="relative flex-grow max-w-md">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  placeholder="ابحث عن جدول..." 
-                  value={tableSearchQuery}
-                  onChange={(e) => setTableSearchQuery(e.target.value)}
-                  className="rounded-xl pr-9 border-2 h-12 focus-visible:ring-primary"
-                />
-              </div>
-              <Select value={selectedTableName} onValueChange={handlePrimaryTableChange}>
-                <SelectTrigger className="w-full md:w-1/2 rounded-xl h-12 text-lg border-2">
-                  <SelectValue placeholder="اختر من القائمة..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {filteredTables.map(table => (
-                    <SelectItem key={table.name} value={table.name}>{table.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="max-w-md">
+              <Popover open={isTableSelectorOpen} onOpenChange={setIsTableSelectorOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={isTableSelectorOpen}
+                    className="w-full justify-between rounded-xl h-14 text-lg border-2 border-primary/20 hover:border-primary px-4 bg-background"
+                  >
+                    <div className="flex items-center gap-3">
+                      <TableIcon className="w-5 h-5 text-primary" />
+                      {selectedTableName || "ابحث عن جدول..."}
+                    </div>
+                    <ChevronDown className="ms-2 h-5 w-5 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 rounded-2xl shadow-2xl border-2" align="start">
+                  <Command className="rounded-2xl">
+                    <CommandInput placeholder="اكتب اسم الجدول للبحث..." className="h-12 border-none focus:ring-0" />
+                    <CommandList className="max-h-[300px] custom-scrollbar">
+                      <CommandEmpty>لم يتم العثور على أي جدول بهذا الاسم.</CommandEmpty>
+                      <CommandGroup heading="الجداول المتاحة">
+                        {metadata?.tables.map((table) => (
+                          <CommandItem
+                            key={table.name}
+                            value={table.name}
+                            onSelect={handlePrimaryTableChange}
+                            className="flex items-center justify-between p-3 cursor-pointer"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="p-1.5 rounded-md bg-secondary text-primary">
+                                <TableIcon className="w-4 h-4" />
+                              </div>
+                              <span className="font-medium">{table.name}</span>
+                            </div>
+                            {selectedTableName === table.name && (
+                              <Check className="h-4 w-4 text-primary" />
+                            )}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
           </QueryBuilderSection>
 
@@ -187,7 +205,7 @@ const QueryBuilderPage: React.FC = () => {
                       onRemove={(id) => setJoins(prev => prev.filter(j => j.id !== id))}
                     />
                   ))}
-                  <Button onClick={() => setJoins(p => [...p, { id: crypto.randomUUID(), joinType: 'INNER JOIN', sourceTable: selectedTableName, targetTable: '', sourceColumn: '', targetColumn: '' }])} variant="outline" className="rounded-xl border-dashed border-2">
+                  <Button onClick={() => setJoins(p => [...p, { id: crypto.randomUUID(), joinType: 'INNER JOIN', sourceTable: selectedTableName, targetTable: '', sourceColumn: '', targetColumn: '' }])} variant="outline" className="rounded-xl border-dashed border-2 hover:bg-primary/5 transition-colors">
                     <PlusCircle className="w-5 h-5 ms-2" /> إضافة علاقة جديدة
                   </Button>
                 </div>
@@ -224,12 +242,12 @@ const QueryBuilderPage: React.FC = () => {
               >
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6 bg-secondary/20 rounded-2xl border-2 border-primary/5">
                   {tablesInQuery.map(table => (
-                    <div key={table.name} className="space-y-3 p-4 bg-background rounded-xl shadow-sm">
+                    <div key={table.name} className="space-y-3 p-4 bg-background rounded-xl shadow-sm border border-primary/5">
                       <p className="text-xs font-black text-primary uppercase border-b pb-2 flex items-center justify-between">
                         {table.name}
                         <TableIcon className="w-3 h-3" />
                       </p>
-                      <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
+                      <div className="space-y-1 max-h-48 overflow-y-auto custom-scrollbar">
                         {table.columns.map(col => {
                           const qName = `${table.name}.${col.name}`;
                           const isSelected = selectedColumns.includes(qName) || selectedColumns.includes('*');
@@ -248,7 +266,7 @@ const QueryBuilderPage: React.FC = () => {
                               }}
                             >
                               <Checkbox checked={isSelected} className="rounded-md" />
-                              <Label className="ms-3 font-medium cursor-pointer flex-grow">{col.name}</Label>
+                              <Label className="ms-3 font-medium cursor-pointer flex-grow text-sm">{col.name}</Label>
                             </div>
                           );
                         })}
@@ -283,9 +301,9 @@ const QueryBuilderPage: React.FC = () => {
         </div>
 
         {queryResult && (
-          <div className="mt-16 space-y-4">
+          <div className="mt-16 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <h3 className="text-2xl font-black flex items-center gap-3">
-              <CheckCircle2 className="w-8 h-8 text-green-500" /> النتائج
+              <CheckCircle2 className="w-8 h-8 text-green-500" /> النتائج المستخرجة
             </h3>
             <DataTable 
               result={queryResult} 
