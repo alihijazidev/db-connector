@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 interface JoinClauseRowProps {
   join: JoinClause;
   allTables: TableMetadata[];
-  availableSourceTables: string[]; // NEW: Tables already included in the query (primary + previous joins)
+  availableSourceTables: string[]; // Tables already included in the query (primary + previous joins)
   onChange: (join: JoinClause) => void;
   onRemove: (id: string) => void;
 }
