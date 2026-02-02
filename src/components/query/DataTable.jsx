@@ -1,91 +1,131 @@
 import React from 'react';
-import { Info, ChevronRight, ChevronLeft, CheckCircle2 } from 'lucide-react';
+import { Table, Paper, Group, Text, ThemeIcon, Badge, Stack, ActionIcon, Pagination, ScrollArea } from '@mantine/core';
+import { Info, CheckCircle2, ChevronRight, ChevronLeft } from 'lucide-react';
 
+/**
+ * A responsive data table component using Mantine UI.
+ * Displays query results with pagination support.
+ * 
+ * @param {Object} result - { columns: string[], data: Object[], totalRows: number }
+ * @param {number} limit - Number of rows per page
+ * @param {number} offset - Current row offset
+ * @param {Function} onPageChange - Callback for pagination
+ */
 export const DataTable = ({ result, limit, offset, onPageChange }) => {
   const { columns, data, totalRows } = result;
   const currentPage = Math.floor(offset / limit) + 1;
   const totalPages = Math.ceil(totalRows / limit);
 
+  // Empty state handling
   if (data.length === 0) {
     return (
-      <div className="bg-amber-50 border-2 border-amber-100 p-8 rounded-[2.5rem] flex items-center gap-6 text-amber-800 shadow-sm">
-        <div className="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center">
-          <Info size={24} />
-        </div>
-        <div>
-          <h4 className="font-black text-xl mb-1">لم يتم العثور على نتائج</h4>
-          <p className="font-medium opacity-80">جرب تعديل الفلاتر أو الشروط للحصول على بيانات.</p>
-        </div>
-      </div>
+      <Paper p="xl" radius="2.5rem" withBorder bg="orange.0" style={{ borderColor: 'var(--mantine-color-orange-2)' }}>
+        <Group gap="xl">
+          <ThemeIcon size={50} radius="xl" color="orange" variant="light">
+            <Info size={26} />
+          </ThemeIcon>
+          <Stack gap={2}>
+            <Text fw={900} size="xl" c="orange.9">لم يتم العثور على نتائج</Text>
+            <Text fw={500} c="orange.8" opacity={0.8}>جرب تعديل الفلاتر أو الشروط للحصول على بيانات.</Text>
+          </Stack>
+        </Group>
+      </Paper>
     );
   }
 
   return (
-    <div className="bg-white rounded-[3rem] border-2 border-indigo-50 shadow-2xl shadow-indigo-100/20 overflow-hidden">
-      <div className="p-8 border-b border-indigo-50 flex justify-between items-center bg-gradient-to-l from-indigo-50/50 to-white">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-green-500 text-white rounded-xl flex items-center justify-center">
-            <CheckCircle2 size={24} />
-          </div>
-          <h4 className="font-black text-2xl text-slate-800 tracking-tight">النتائج المستخرجة</h4>
-        </div>
-        <div className="flex items-center gap-2 bg-indigo-100/50 px-4 py-2 rounded-full">
-          <span className="w-2 h-2 bg-indigo-600 rounded-full animate-pulse" />
-          <span className="text-sm font-black text-indigo-700">{totalRows} سجل إجمالي</span>
-        </div>
-      </div>
-      
-      <div className="overflow-x-auto">
-        <table className="w-full text-right">
-          <thead>
-            <tr className="bg-slate-50/50">
-              {columns.map((col) => (
-                <th key={col} className="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest border-b border-indigo-50">
-                  {col}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-indigo-50">
-            {data.map((row, i) => (
-              <tr key={i} className="hover:bg-indigo-50/30 transition-colors group">
-                {columns.map((col) => (
-                  <td key={col} className="px-8 py-5 text-sm font-bold text-slate-600 group-hover:text-indigo-600 transition-colors">
-                    {String(row[col] ?? 'NULL')}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+    <Paper radius="2.5rem" withBorder shadow="sm" className="overflow-hidden bg-white">
+      {/* Table Header Section */}
+      <Group justify="space-between" p="xl" className="border-b border-slate-50 bg-slate-50/30">
+        <Group gap="md">
+          <ThemeIcon size="lg" color="green" radius="md">
+            <CheckCircle2 size={20} />
+          </ThemeIcon>
+          <Text fw={900} size="xl">النتائج المستخرجة</Text>
+        </Group>
+        <Badge variant="light" color="indigo" size="lg" radius="xl">
+          {totalRows} سجل إجمالي
+        </Badge>
+      </Group>
 
+      {/* Scrollable Table Area */}
+      <Table.ScrollContainer minWidth={500}>
+        <Table 
+          striped 
+          highlightOnHover 
+          verticalSpacing="md" 
+          horizontalSpacing="xl"
+          className="text-right"
+        >
+          <Table.Thead className="bg-slate-50/50">
+            <Table.Tr>
+              {columns.map((col) => (
+                <Table.Th key={col} className="text-right">
+                  <Text size="xs" fw={900} c="dimmed" tt="uppercase">
+                    {col}
+                  </Text>
+                </Table.Th>
+              ))}
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {data.map((row, i) => (
+              <Table.Tr key={i}>
+                {columns.map((col) => (
+                  <Table.Td key={col}>
+                    <Text size="sm" fw={600} c="slate.7">
+                      {String(row[col] ?? 'NULL')}
+                    </Text>
+                  </Table.Td>
+                ))}
+              </Table.Tr>
+            ))}
+          </Table.Tbody>
+        </Table>
+      </Table.ScrollContainer>
+
+      {/* Pagination Footer */}
       {totalRows > limit && (
-        <div className="p-8 bg-slate-50/30 border-t border-indigo-50 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <span className="text-sm font-bold text-slate-500">
-              الصفحة <span className="text-indigo-600 font-black px-2 py-1 bg-white rounded-lg shadow-sm">{currentPage}</span> من {totalPages}
-            </span>
-          </div>
+        <Group justify="space-between" p="xl" className="border-t border-slate-50">
+          <Text size="sm" fw={700} c="dimmed">
+            الصفحة <Text component="span" c="indigo" fw={900}>{currentPage}</Text> من {totalPages}
+          </Text>
           
-          <div className="flex gap-3">
-            <button 
-              onClick={() => onPageChange(offset - limit)}
+          <Group gap="xs">
+            <ActionIcon 
+              variant="light" 
+              size="lg" 
+              radius="xl" 
               disabled={currentPage === 1}
-              className="w-12 h-12 flex items-center justify-center rounded-2xl border-2 border-indigo-100 bg-white hover:bg-indigo-600 hover:text-white disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-slate-400 transition-all shadow-sm"
+              onClick={() => onPageChange(offset - limit)}
             >
-              <ChevronRight size={24} />
-            </button>
-            <button 
-              onClick={() => onPageChange(offset + limit)}
+              <ChevronRight size={18} />
+            </ActionIcon>
+            
+            <Pagination.Root 
+              total={totalPages} 
+              value={currentPage} 
+              onChange={(p) => onPageChange((p - 1) * limit)}
+              size="sm"
+              radius="xl"
+            >
+              <Group gap={5} justify="center">
+                <Pagination.Items />
+              </Group>
+            </Pagination.Root>
+
+            <ActionIcon 
+              variant="light" 
+              size="lg" 
+              radius="xl" 
               disabled={currentPage === totalPages}
-              className="w-12 h-12 flex items-center justify-center rounded-2xl border-2 border-indigo-100 bg-white hover:bg-indigo-600 hover:text-white disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-slate-400 transition-all shadow-sm"
+              onClick={() => onPageChange(offset + limit)}
             >
-              <ChevronLeft size={24} />
-            </button>
-          </div>
-        </div>
+              <ChevronLeft size={18} />
+            </ActionIcon>
+          </Group>
+        </Group>
       )}
-    </div>
+    </Paper>
   );
 };
