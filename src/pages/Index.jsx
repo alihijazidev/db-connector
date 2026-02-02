@@ -1,85 +1,107 @@
 import React from 'react';
 import { Layout } from '@/components/Layout';
-import { Database, Zap, Shield, ArrowUpRight, BarChart3, Globe } from 'lucide-react';
+import { Container, Title, Text, SimpleGrid, Card, Group, ThemeIcon, Box, Badge, Stack } from '@mantine/core';
+import { Database, Zap, Shield, ArrowUpRight, BarChart3, Globe, Sparkles } from 'lucide-react';
 
-const FeatureCard = ({ icon: Icon, title, desc, colorClass }) => (
-  <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_60px_-20px_rgba(0,0,0,0.1)] transition-all duration-500 group cursor-default overflow-hidden relative">
-    <div className={`absolute -top-10 -left-10 w-32 h-32 rounded-full opacity-5 group-hover:scale-150 transition-transform duration-700 ${colorClass}`} />
+const FeatureCard = ({ icon: Icon, title, desc, color }) => (
+  <Card 
+    radius="3rem" 
+    p="xl" 
+    withBorder 
+    className="transition-all duration-500 hover:shadow-2xl hover:-translate-y-2 group"
+  >
+    <ThemeIcon 
+      size={60} 
+      radius="2rem" 
+      variant="light" 
+      color={color} 
+      className="mb-6 group-hover:scale-110 transition-transform"
+    >
+      <Icon size={30} />
+    </ThemeIcon>
     
-    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-opacity-10 transition-transform group-hover:scale-110 duration-300 ${colorClass} text-white`}>
-      <Icon size={28} />
-    </div>
+    <Group justify="space-between" mb="xs">
+      <Title order={3} fw={900}>{title}</Title>
+      <ArrowUpRight className="text-slate-300 group-hover:text-indigo-600 transition-colors" />
+    </Group>
     
-    <div className="flex items-start justify-between">
-      <h3 className="font-black text-slate-800 text-xl mb-3">{title}</h3>
-      <ArrowUpRight className="text-slate-300 group-hover:text-indigo-500 transition-colors" size={20} />
-    </div>
-    
-    <p className="text-slate-500 leading-relaxed font-medium">{desc}</p>
-  </div>
+    <Text c="dimmed" fw={500} size="md" className="leading-relaxed">
+      {desc}
+    </Text>
+  </Card>
 );
 
 const Index = () => {
   return (
     <Layout>
-      <div className="relative">
+      <Container size="xl">
         {/* Hero Section */}
-        <div className="text-right max-w-3xl mb-16 space-y-6">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-full text-xs font-black uppercase tracking-widest border border-indigo-100">
-            <span className="w-2 h-2 bg-indigo-600 rounded-full animate-pulse" />
+        <Stack gap={30} className="mb-20">
+          <Badge 
+            variant="light" 
+            color="indigo" 
+            size="xl" 
+            radius="xl" 
+            className="w-fit"
+            leftSection={<Sparkles size={14} />}
+          >
             تحليل البيانات أصبح أسهل
-          </div>
-          <h1 className="text-5xl md:text-6xl font-black text-slate-900 leading-[1.15]">
+          </Badge>
+          <Title className="text-6xl md:text-7xl font-black text-slate-900 leading-tight">
             بياناتك تتحدث، <br /> 
-            <span className="text-transparent bg-clip-text bg-gradient-to-l from-indigo-600 to-indigo-400">نحن نساعدك على فهمها</span>
-          </h1>
-          <p className="text-xl text-slate-500 leading-relaxed max-w-2xl font-medium">
+            <Text component="span" variant="gradient" gradient={{ from: 'indigo', to: 'indigo.4', deg: 90 }}>
+              نحن نساعدك على فهمها
+            </Text>
+          </Title>
+          <Text size="xl" c="dimmed" className="max-w-2xl font-medium leading-relaxed">
             قم بربط قواعد بياناتك المختلفة في مكان واحد، وقم ببناء استعلامات معقدة بدون كتابة سطر كود واحد.
-          </p>
-        </div>
+          </Text>
+        </Stack>
 
-        {/* Stats / Quick Info */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+        {/* Stats Grid */}
+        <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }} spacing="lg" className="mb-20">
           {[
-            { label: 'اتصال نشط', val: '24/7', icon: Globe },
-            { label: 'وقت الاستجابة', val: '45ms', icon: Zap },
-            { label: 'أمان البيانات', val: '100%', icon: Shield },
-            { label: 'تقارير يومية', val: 'بصري', icon: BarChart3 },
+            { label: 'اتصال نشط', val: '24/7', icon: Globe, color: 'indigo' },
+            { label: 'وقت الاستجابة', val: '45ms', icon: Zap, color: 'orange' },
+            { label: 'أمان البيانات', val: '100%', icon: Shield, color: 'teal' },
+            { label: 'تقارير يومية', val: 'بصري', icon: BarChart3, color: 'blue' },
           ].map((item, i) => (
-            <div key={i} className="bg-slate-900/5 border border-slate-200 p-5 rounded-3xl flex items-center gap-4">
-              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm text-indigo-600">
-                <item.icon size={20} />
-              </div>
-              <div>
-                <div className="text-xs font-black text-slate-400 uppercase tracking-tight">{item.label}</div>
-                <div className="text-lg font-black text-slate-800">{item.val}</div>
-              </div>
-            </div>
+            <Card key={i} radius="2rem" withBorder p="lg" bg="slate.0">
+              <Group gap="md">
+                <ThemeIcon size={44} radius="xl" variant="white" color={item.color} className="shadow-sm">
+                  <item.icon size={22} />
+                </ThemeIcon>
+                <Box>
+                  <Text size="xs" fw={900} c="dimmed" tt="uppercase">{item.label}</Text>
+                  <Text size="lg" fw={900}>{item.val}</Text>
+                </Box>
+              </Group>
+            </Card>
           ))}
-        </div>
+        </SimpleGrid>
 
-        {/* Feature Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {/* Features */}
+        <SimpleGrid cols={{ base: 1, md: 3 }} spacing={30}>
           <FeatureCard 
             icon={Database} 
             title="تعدد المصادر" 
             desc="اربط MySQL، PostgreSQL، وSQL Server بكل سهولة وبضغطة زر واحدة."
-            colorClass="bg-indigo-600"
+            color="indigo"
           />
           <FeatureCard 
             icon={Zap} 
             title="بناء فوري" 
             desc="محرك ذكي لبناء الاستعلامات يمنحك النتائج في أجزاء من الثانية."
-            colorClass="bg-amber-500"
+            color="orange"
           />
           <FeatureCard 
             icon={Shield} 
             title="حماية مطلقة" 
             desc="بياناتك مشفرة ومحفوظة في متصفحك فقط. نحن لا نطلع على بياناتك أبداً."
-            colorClass="bg-emerald-500"
+            color="teal"
           />
-        </div>
-      </div>
+        </SimpleGrid>
+      </Container>
     </Layout>
   );
 };

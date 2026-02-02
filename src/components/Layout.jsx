@@ -1,53 +1,45 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { AppShell, Burger, Group, Text, Box, ScrollArea } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
 import { Sidebar } from './Sidebar';
-import { Menu, Database, X } from 'lucide-react';
+import { Database } from 'lucide-react';
 
 export const Layout = ({ children }) => {
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [opened, { toggle }] = useDisclosure();
 
   return (
-    <div className="flex h-screen w-full overflow-hidden" dir="rtl">
-      {/* Sidebar for Desktop */}
-      <aside className="hidden md:flex w-72 flex-col bg-white border-e border-slate-200">
-        <Sidebar />
-      </aside>
+    <AppShell
+      header={{ height: { base: 70, md: 0 } }}
+      navbar={{
+        width: 300,
+        breakpoint: 'md',
+        collapsed: { mobile: !opened },
+      }}
+      padding="0"
+    >
+      <AppShell.Header className="md:hidden border-b-slate-100 px-md">
+        <Group h="100%" justify="space-between">
+          <Group>
+            <Box className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg">
+              <Database size={20} />
+            </Box>
+            <Text fw={900} size="lg">داتا-مايند</Text>
+          </Group>
+          <Burger opened={opened} onClick={toggle} hiddenFrom="md" size="sm" />
+        </Group>
+      </AppShell.Header>
 
-      {/* Mobile Sidebar Overlay */}
-      {isMobileOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
-          <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setIsMobileOpen(false)} />
-          <aside className="absolute right-0 top-0 bottom-0 w-72 bg-white shadow-2xl">
-            <div className="p-4 flex justify-end">
-              <button onClick={() => setIsMobileOpen(false)} className="p-2 hover:bg-slate-100 rounded-lg">
-                <X size={20} />
-              </button>
-            </div>
-            <Sidebar />
-          </aside>
-        </div>
-      )}
+      <AppShell.Navbar p="0" className="border-e-slate-100 shadow-xl">
+        <Sidebar onClose={() => opened && toggle()} />
+      </AppShell.Navbar>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile Header */}
-        <header className="md:hidden h-16 bg-white border-b border-slate-200 px-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white">
-              <Database size={18} />
-            </div>
-            <span className="font-bold">موصل البيانات</span>
-          </div>
-          <button onClick={() => setIsMobileOpen(true)} className="p-2 hover:bg-slate-100 rounded-lg">
-            <Menu size={24} />
-          </button>
-        </header>
-
-        <main className="flex-1 overflow-y-auto custom-scrollbar bg-[#f8fafc]">
-          <div className="max-w-6xl mx-auto p-4 md:p-8 lg:p-12">
+      <AppShell.Main bg="#f8fafc">
+        <ScrollArea h="100vh" className="custom-scrollbar" offsetScrollbars>
+          <Box p={{ base: 'md', md: 'xl', lg: 50 }}>
             {children}
-          </div>
-        </main>
-      </div>
-    </div>
+          </Box>
+        </ScrollArea>
+      </AppShell.Main>
+    </AppShell>
   );
 };
