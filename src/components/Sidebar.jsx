@@ -8,17 +8,7 @@ import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 
-interface SidebarProps {
-  isMobile: boolean;
-}
-
-const SidebarItem: React.FC<{ 
-  connectionName: string, 
-  databaseName: string,
-  connectionId: string, 
-  isActive: boolean, 
-  onClick: () => void 
-}> = ({ connectionName, databaseName, connectionId, isActive, onClick }) => {
+const SidebarItem = ({ connectionName, databaseName, connectionId, isActive, onClick }) => {
   return (
     <div className={cn(
       "flex flex-col p-3 rounded-xl transition-all duration-200 cursor-pointer border border-transparent",
@@ -54,12 +44,12 @@ const SidebarItem: React.FC<{
   );
 };
 
-export const Sidebar: React.FC<SidebarProps> = ({ isMobile }) => {
+export const Sidebar = ({ isMobile }) => {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { connections, activeConnectionId, setActiveConnection } = useConnection();
 
-  const handleConnectionClick = (id: string) => {
+  const handleConnectionClick = (id) => {
     setActiveConnection(id === activeConnectionId ? null : id);
   };
 

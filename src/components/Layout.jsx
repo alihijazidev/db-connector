@@ -1,15 +1,11 @@
-import React, { ReactNode, useState } from 'react';
+import React, { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
-interface LayoutProps {
-  children: ReactNode;
-}
-
-export const Layout: React.FC<LayoutProps> = ({ children }) => {
+export const Layout = ({ children }) => {
   const isMobile = useIsMobile();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
