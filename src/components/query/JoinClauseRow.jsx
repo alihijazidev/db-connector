@@ -1,6 +1,47 @@
 import React from 'react';
 import { Group, Select, ActionIcon, Paper, Text, Box, ThemeIcon, Stack, Popover, List, Badge } from '@mantine/core';
-import { X, Database, Link as LinkIcon, Table as TableIcon, Info, CircleHelp } from 'lucide-react';
+import { X, Database, Link as LinkIcon, Table as TableIcon, CircleHelp } from 'lucide-react';
+
+// مكون مخصص لرسم أشكال Venn Diagram لكل نوع ربط
+const JoinVisual = ({ type, size = 20 }) => {
+  const strokeColor = "currentColor";
+  const highlightColor = "var(--mantine-color-indigo-5)";
+  
+  return (
+    <svg width={size * 1.5} height={size} viewBox="0 0 30 20" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+      <defs>
+        <clipPath id="circle-left">
+          <circle cx="10" cy="10" r="8" />
+        </clipPath>
+        <clipPath id="circle-right">
+          <circle cx="20" cy="10" r="8" />
+        </clipPath>
+      </defs>
+
+      {/* دائرة اليسار الأساسية */}
+      <circle cx="10" cy="10" r="8" stroke={strokeColor} strokeWidth="1.5" 
+        fill={(type === 'LEFT JOIN' || type === 'FULL OUTER JOIN') ? highlightColor : 'transparent'} 
+        fillOpacity={0.3} 
+      />
+      
+      {/* دائرة اليمين الأساسية */}
+      <circle cx="20" cy="10" r="8" stroke={strokeColor} strokeWidth="1.5" 
+        fill={(type === 'RIGHT JOIN' || type === 'FULL OUTER JOIN') ? highlightColor : 'transparent'} 
+        fillOpacity={0.3} 
+      />
+
+      {/* تظليل التقاطع (الربط الداخلي) */}
+      {(type === 'INNER JOIN' || type === 'LEFT JOIN' || type === 'RIGHT JOIN' || type === 'FULL OUTER JOIN') && (
+        <g clipPath="url(#circle-left)">
+          <circle cx="20" cy="10" r="8" 
+            fill={highlightColor} 
+            fillOpacity={type === 'INNER JOIN' ? 0.8 : 0.4} 
+          />
+        </g>
+      )}
+    </svg>
+  );
+};
 
 const JOIN_TYPES = [
   { value: "INNER JOIN", label: "ربط داخلي (Inner)" },
@@ -13,16 +54,16 @@ const JoinInfoContent = () => (
   <Stack gap="md" p="xs">
     <Text fw={900} size="sm" c="indigo">شرح أنواع الربط:</Text>
     <List size="xs" spacing="xs" center>
-      <List.Item icon={<Badge size="xs" circle color="indigo">1</Badge>}>
+      <List.Item icon={<JoinVisual type="INNER JOIN" size={14} />}>
         <Text size="xs"><b>الداخلي:</b> يجلب فقط السجلات المتطابقة في كلا الجدولين.</Text>
       </List.Item>
-      <List.Item icon={<Badge size="xs" circle color="blue">2</Badge>}>
+      <List.Item icon={<JoinVisual type="LEFT JOIN" size={14} />}>
         <Text size="xs"><b>اليساري:</b> كل سجلات الجدول الأول + المتطابق من الثاني.</Text>
       </List.Item>
-      <List.Item icon={<Badge size="xs" circle color="orange">3</Badge>}>
+      <List.Item icon={<JoinVisual type="RIGHT JOIN" size={14} />}>
         <Text size="xs"><b>اليميني:</b> كل سجلات الجدول الثاني + المتطابق من الأول.</Text>
       </List.Item>
-      <List.Item icon={<Badge size="xs" circle color="teal">4</Badge>}>
+      <List.Item icon={<JoinVisual type="FULL OUTER JOIN" size={14} />}>
         <Text size="xs"><b>الكامل:</b> جميع السجلات من الجدولين سواء وجد تطابق أم لا.</Text>
       </List.Item>
     </List>
@@ -66,7 +107,13 @@ export const JoinClauseRow = ({
                 onChange={(val) => handleFieldChange('joinType', val)}
                 radius="xl"
                 className="flex-1"
-                leftSection={<LinkIcon size={16} className="text-indigo-500" />}
+                leftSection={join.joinType ? <JoinVisual type={join.joinType} size={16} /> : <LinkIcon size={16} />}
+                renderOption={({ option, checked }) => (
+                  <Group gap="sm" wrap="nowrap">
+                    <JoinVisual type={option.value} size={16} />
+                    <Text size="sm" fw={checked ? 900 : 500}>{option.label}</Text>
+                  </Group>
+                )}
               />
               <Popover width={280} position="bottom" withArrow shadow="md" radius="lg">
                 <Popover.Target>
