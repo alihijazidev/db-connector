@@ -1,54 +1,59 @@
 import React, { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Menu, Database } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Menu, Database, X } from 'lucide-react';
 
 export const Layout = ({ children }) => {
   const isMobile = useIsMobile();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  if (isMobile) {
-    return (
-      <div className="flex flex-col h-screen bg-background overflow-hidden" dir="rtl">
-        <header className="px-5 py-4 border-b flex justify-between items-center bg-card/80 backdrop-blur-md z-50 shadow-sm shrink-0">
-          <div className="flex items-center gap-2 text-primary font-black">
-             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
-              <Database className="w-5 h-5 text-white" />
+  return (
+    <div className="flex h-screen w-full bg-[#f8fafc] text-slate-900 font-sans overflow-hidden" dir="rtl">
+      {/* Sidebar for Desktop */}
+      {!isMobile && (
+        <aside className="w-72 h-full bg-white border-e border-slate-200 shadow-sm z-30 flex-shrink-0">
+          <Sidebar />
+        </aside>
+      )}
+
+      {/* Mobile Sidebar Overlay */}
+      {isMobile && isSidebarOpen && (
+        <div className="fixed inset-0 z-50 flex">
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)} />
+          <aside className="relative w-72 h-full bg-white shadow-2xl animate-in slide-in-from-right duration-300">
+            <div className="absolute left-[-40px] top-4">
+              <button onClick={() => setIsSidebarOpen(false)} className="p-2 bg-white rounded-full shadow-lg text-slate-500">
+                <X size={20} />
+              </button>
             </div>
-            <span className="text-lg tracking-tight">موصل البيانات</span>
-          </div>
-          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-xl hover:bg-primary/10">
-                <Menu className="h-6 w-6 text-primary" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="p-0 w-72 sm:max-w-xs border-s-0">
-              <Sidebar isMobile={true} />
-            </SheetContent>
-          </Sheet>
-        </header>
-        <main className="flex-1 overflow-y-auto bg-slate-50/50">
-          <div className="p-6 pb-24">
+            <Sidebar />
+          </aside>
+        </div>
+      )}
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Header for Mobile */}
+        {isMobile && (
+          <header className="h-16 flex-shrink-0 bg-white border-b border-slate-200 px-4 flex items-center justify-between z-20">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-indigo-200 shadow-lg">
+                <Database size={18} />
+              </div>
+              <span className="font-bold text-lg">موصل البيانات</span>
+            </div>
+            <button onClick={() => setIsSidebarOpen(true)} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+              <Menu size={24} className="text-slate-600" />
+            </button>
+          </header>
+        )}
+
+        <main className="flex-1 overflow-y-auto custom-scrollbar">
+          <div className="max-w-7xl mx-auto p-4 md:p-10 lg:p-12">
             {children}
           </div>
         </main>
       </div>
-    );
-  }
-
-  return (
-    <div className="flex h-screen w-full overflow-hidden bg-background" dir="rtl">
-      <aside className="w-80 h-full border-e border-border/50 shadow-xl shadow-black/5 z-40 bg-card shrink-0">
-        <Sidebar isMobile={false} />
-      </aside>
-      <main className="flex-1 overflow-y-auto bg-slate-50/50 relative h-full">
-        <div className="max-w-7xl mx-auto p-8 lg:p-12 min-h-full">
-          {children}
-        </div>
-      </main>
     </div>
   );
 };

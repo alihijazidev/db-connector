@@ -1,9 +1,5 @@
 import React from 'react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Info } from 'lucide-react';
+import { Info, ChevronRight, ChevronLeft } from 'lucide-react';
 
 export const DataTable = ({ result, limit, offset, onPageChange }) => {
   const { columns, data, totalRows } = result;
@@ -12,70 +8,74 @@ export const DataTable = ({ result, limit, offset, onPageChange }) => {
 
   if (data.length === 0) {
     return (
-      <Alert className="rounded-xl border-yellow-500/50 bg-yellow-500/10">
-        <Info className="h-4 w-4 text-yellow-600" />
-        <AlertTitle className="text-yellow-700">لم يتم العثور على نتائج</AlertTitle>
-        <AlertDescription>الاستعلام لم يرجع أي بيانات. حاول تعديل الفلاتر أو اختيار جدول مختلف.</AlertDescription>
-      </Alert>
+      <div className="bg-amber-50 border border-amber-200 p-6 rounded-3xl flex items-center gap-4 text-amber-800">
+        <Info className="flex-shrink-0" />
+        <div>
+          <h4 className="font-bold">لا توجد نتائج</h4>
+          <p className="text-sm opacity-80">الاستعلام لم يرجع أي بيانات حالياً.</p>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card className="rounded-2xl shadow-lg overflow-hidden">
-      <CardHeader className="p-4 border-b bg-secondary/50">
-        <CardTitle className="text-lg font-semibold">
-          نتائج الاستعلام ({data.length} صف معروض / {totalRows} إجمالي)
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-0 overflow-x-auto">
-        <Table>
-          <TableHeader className="bg-primary/10 sticky top-0">
-            <TableRow>
+    <div className="bg-white rounded-[2rem] border border-slate-200 shadow-xl overflow-hidden">
+      <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+        <h4 className="font-black text-slate-800">نتائج الاستعلام</h4>
+        <span className="text-xs bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full font-bold">
+          {totalRows} إجمالي الصفوف
+        </span>
+      </div>
+      
+      <div className="overflow-x-auto">
+        <table className="w-full text-right border-collapse">
+          <thead>
+            <tr className="bg-slate-50">
               {columns.map((col) => (
-                <TableHead key={col} className="font-bold text-primary whitespace-nowrap text-right">
+                <th key={col} className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-wider border-b border-slate-100">
                   {col}
-                </TableHead>
+                </th>
               ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.map((row, rowIndex) => (
-              <TableRow key={rowIndex} className="hover:bg-secondary/30 transition-colors">
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-50">
+            {data.map((row, i) => (
+              <tr key={i} className="hover:bg-indigo-50/30 transition-colors">
                 {columns.map((col) => (
-                  <TableCell key={col} className="text-sm text-right">
+                  <td key={col} className="px-6 py-4 text-sm font-medium text-slate-600">
                     {String(row[col] ?? 'NULL')}
-                  </TableCell>
+                  </td>
                 ))}
-              </TableRow>
+              </tr>
             ))}
-          </TableBody>
-        </Table>
-      </CardContent>
+          </tbody>
+        </table>
+      </div>
+
       {totalRows > limit && (
-        <div className="p-4 border-t flex justify-center">
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious 
-                  onClick={() => onPageChange(offset - limit)} 
-                  className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                  title="السابق"
-                />
-              </PaginationItem>
-              <PaginationItem>
-                <span className="px-4 py-2 text-sm font-medium">صفحة {currentPage} من {totalPages}</span>
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationNext 
-                  onClick={() => onPageChange(offset + limit)} 
-                  className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                  title="التالي"
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
+        <div className="p-6 bg-slate-50/50 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="text-sm text-slate-500 font-medium">
+            عرض صفحة <span className="text-indigo-600 font-bold">{currentPage}</span> من <span className="text-slate-800 font-bold">{totalPages}</span>
+          </p>
+          
+          <div className="flex gap-2">
+            <button 
+              onClick={() => onPageChange(offset - limit)}
+              disabled={currentPage === 1}
+              className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+              <ChevronRight size={20} />
+            </button>
+            <button 
+              onClick={() => onPageChange(offset + limit)}
+              disabled={currentPage === totalPages}
+              className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+              <ChevronLeft size={20} />
+            </button>
+          </div>
         </div>
       )}
-    </Card>
+    </div>
   );
 };

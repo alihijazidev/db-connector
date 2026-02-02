@@ -1,156 +1,112 @@
-import React, { useState, useMemo } from 'react';
-import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { ConnectionForm } from './ConnectionForm';
+import React, { useState } from 'react';
 import { useConnection } from '@/context/ConnectionContext';
-import { Database, PlusCircle, ChevronLeft, Code, Search, Box, Settings2, History } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Database, Plus, Code, Search, Box, ChevronLeft, LayoutDashboard } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
-import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
-const SidebarItem = ({ connectionName, databaseName, connectionId, isActive, onClick }) => {
-  return (
-    <div 
-      className={cn(
-        "group flex flex-col p-4 rounded-2xl transition-all duration-300 cursor-pointer border-2 mb-2",
-        isActive 
-          ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20 scale-[1.02]" 
-          : "bg-background border-transparent hover:border-primary/20 hover:bg-primary/5 text-foreground"
-      )} 
-      onClick={onClick}
-    >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3 overflow-hidden">
-          <div className={cn(
-            "p-2.5 rounded-xl transition-colors duration-300",
-            isActive ? "bg-white/20 text-white" : "bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white"
-          )}>
-            <Database className="w-5 h-5" />
-          </div>
-          <div className="flex flex-col overflow-hidden text-right">
-            <span className="font-bold truncate text-sm leading-tight">{connectionName}</span>
-            <div className={cn(
-              "flex items-center text-[10px] mt-1 font-medium",
-              isActive ? "text-white/80" : "text-muted-foreground"
-            )}>
-              <Box className="w-3 h-3 ms-1 flex-shrink-0" />
-              <span className="truncate">{databaseName}</span>
-            </div>
-          </div>
-        </div>
-        <ChevronLeft className={cn(
-          "w-4 h-4 transition-transform duration-300", 
-          isActive ? "-rotate-90 text-white" : "text-muted-foreground group-hover:text-primary"
-        )} />
-      </div>
-      
-      {isActive && (
-        <div className="mt-4 pt-4 border-t border-white/20 animate-in fade-in slide-in-from-top-2 duration-300">
-          <Link to={`/query/${connectionId}`} className="block" onClick={(e) => e.stopPropagation()}>
-            <Button variant="secondary" size="sm" className="w-full justify-center rounded-xl bg-white text-primary hover:bg-white/90 font-bold text-xs py-5">
-              <Code className="w-4 h-4 ms-2" /> فتح منشئ الاستعلامات
-            </Button>
-          </Link>
-        </div>
-      )}
-    </div>
-  );
-};
-
-export const Sidebar = ({ isMobile }) => {
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+export const Sidebar = () => {
   const { connections, activeConnectionId, setActiveConnection } = useConnection();
+  const [search, setSearch] = useState('');
   const location = useLocation();
 
-  const handleConnectionClick = (id) => {
-    setActiveConnection(id === activeConnectionId ? null : id);
-  };
-
-  const filteredConnections = useMemo(() => {
-    return connections.filter(conn => 
-      conn.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      conn.database.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [connections, searchQuery]);
+  const filtered = connections.filter(c => 
+    c.name.toLowerCase().includes(search.toLowerCase()) || 
+    c.database.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
-    <div className={cn(
-      "flex flex-col h-full bg-card p-6 transition-all duration-300 overflow-hidden",
-      isMobile ? "w-full" : "w-80"
-    )}>
-      <div className="flex items-center gap-3 mb-8">
-        <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/30">
-          <Database className="w-6 h-6 text-white" />
+    <div className="flex flex-col h-full p-5 overflow-hidden">
+      {/* Brand */}
+      <div className="flex items-center gap-3 mb-8 px-2">
+        <div className="w-10 h-10 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-100">
+          <Database size={22} />
         </div>
         <div>
-          <h2 className="text-xl font-black text-foreground tracking-tight leading-none">موصل البيانات</h2>
-          <p className="text-[10px] text-muted-foreground font-bold mt-1 opacity-60 uppercase tracking-widest">الإصدار الذكي 2.0</p>
+          <h1 className="font-black text-slate-800 text-lg leading-tight">داتا-مايند</h1>
+          <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">موصل ذكي</p>
         </div>
       </div>
 
-      <div className="flex-shrink-0 space-y-4 mb-8">
-        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-          <SheetTrigger asChild>
-            <Button className="w-full rounded-2xl py-7 text-base font-black bg-primary hover:bg-primary/90 transition-all shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95">
-              <PlusCircle className="w-5 h-5 ms-2" /> اتصال جديد
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="right" className="w-full sm:max-w-md bg-background p-0 border-s-0">
-            <SheetHeader className="p-8 border-b text-right bg-primary/5">
-              <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center mb-4">
-                <Settings2 className="w-7 h-7 text-white" />
-              </div>
-              <SheetTitle className="text-3xl font-black text-primary">إعداد الاتصال</SheetTitle>
-              <SheetDescription className="text-base text-muted-foreground font-medium">
-                أدخل تفاصيل الاتصال بقاعدة البيانات الخاصة بك للبدء في تحليل البيانات.
-              </SheetDescription>
-            </SheetHeader>
-            <div className="p-8">
-              <ConnectionForm onSuccess={() => setIsSheetOpen(false)} />
-            </div>
-          </SheetContent>
-        </Sheet>
+      {/* Action Button */}
+      <button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-4 rounded-2xl shadow-lg shadow-indigo-100 transition-all active:scale-95 flex items-center justify-center gap-2 mb-6">
+        <Plus size={20} />
+        <span>اتصال جديد</span>
+      </button>
 
-        <div className="relative group">
-          <Search className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
-          <Input 
-            placeholder="بحث في القواعد..." 
-            className="rounded-2xl pr-10 py-6 bg-background/50 border-border/50 focus:border-primary/30 focus:bg-background transition-all"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
+      {/* Search */}
+      <div className="relative mb-6">
+        <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+        <input 
+          type="text" 
+          placeholder="ابحث عن قاعدة..."
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pr-10 pl-4 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
       </div>
 
-      <div className="flex-grow flex flex-col overflow-hidden">
-        <div className="flex items-center justify-between mb-4 px-2 flex-shrink-0">
-          <h3 className="text-[11px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
-            <History className="w-3 h-3" /> الاتصالات النشطة ({filteredConnections.length})
-          </h3>
+      {/* Nav Section */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar -mx-2 px-2 space-y-1.5">
+        <Link to="/" className={cn(
+          "flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all",
+          location.pathname === '/' ? "bg-indigo-50 text-indigo-600" : "text-slate-500 hover:bg-slate-50"
+        )}>
+          <LayoutDashboard size={18} />
+          <span>الرئيسية</span>
+        </Link>
+
+        <div className="pt-4 pb-2 px-4">
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">قواعد البيانات</span>
         </div>
-        
-        <div className="flex-grow overflow-y-auto custom-scrollbar px-1 pb-6 space-y-1">
-          {filteredConnections.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/20 rounded-3xl border-2 border-dashed border-border/50 px-4">
-              <Database className="w-10 h-10 text-muted-foreground/20 mb-3" />
-              <p className="text-sm text-muted-foreground font-medium italic">
-                {searchQuery ? "لا توجد نتائج للبحث." : "ابدأ بإضافة أول اتصال لك."}
-              </p>
+
+        {filtered.map(conn => {
+          const isActive = conn.id === activeConnectionId;
+          return (
+            <div key={conn.id} className="space-y-1">
+              <button 
+                onClick={() => setActiveConnection(conn.id === activeConnectionId ? null : conn.id)}
+                className={cn(
+                  "w-full flex items-center justify-between p-3.5 rounded-2xl transition-all border-2",
+                  isActive 
+                    ? "bg-white border-indigo-600 shadow-md" 
+                    : "bg-transparent border-transparent hover:bg-slate-50 text-slate-600"
+                )}
+              >
+                <div className="flex items-center gap-3 overflow-hidden text-right">
+                  <div className={cn("p-2 rounded-xl", isActive ? "bg-indigo-600 text-white" : "bg-slate-100")}>
+                    <Database size={16} />
+                  </div>
+                  <div className="overflow-hidden">
+                    <div className="font-bold text-sm truncate">{conn.name}</div>
+                    <div className="text-[10px] text-slate-400 truncate uppercase">{conn.database}</div>
+                  </div>
+                </div>
+                <ChevronLeft size={14} className={cn("transition-transform", isActive && "-rotate-90 text-indigo-600")} />
+              </button>
+
+              {isActive && (
+                <div className="mx-2 p-1 bg-indigo-50 rounded-b-2xl animate-in fade-in slide-in-from-top-2 duration-300">
+                  <Link to={`/query/${conn.id}`} className="flex items-center gap-2 w-full p-2.5 text-xs font-bold text-indigo-700 hover:bg-indigo-100 rounded-xl transition-colors">
+                    <Code size={14} />
+                    <span>منشئ الاستعلامات</span>
+                  </Link>
+                </div>
+              )}
             </div>
-          ) : (
-            filteredConnections.map((conn) => (
-              <SidebarItem
-                key={conn.id}
-                connectionName={conn.name}
-                databaseName={conn.database}
-                connectionId={conn.id}
-                isActive={conn.id === activeConnectionId}
-                onClick={() => handleConnectionClick(conn.id)}
-              />
-            ))
-          )}
-        </div>
+          );
+        })}
+
+        {filtered.length === 0 && (
+          <div className="py-10 text-center px-4">
+            <Box className="w-8 h-8 text-slate-200 mx-auto mb-2" />
+            <p className="text-xs text-slate-400">لا توجد اتصالات حالياً</p>
+          </div>
+        )}
+      </div>
+
+      {/* Footer info */}
+      <div className="pt-4 border-t border-slate-100 text-[10px] text-slate-400 text-center font-medium">
+        داتا-مايند v2.0 © 2024
       </div>
     </div>
   );
