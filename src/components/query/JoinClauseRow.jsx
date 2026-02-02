@@ -1,13 +1,12 @@
 import React from 'react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { X } from 'lucide-react';
+import { X, ArrowRightLeft } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const JOIN_TYPES = [
-  { value: "INNER JOIN", label: "ربط داخلي (Inner Join)", description: "تضمين الصفوف التي لها تطابق في كلا الجدولين فقط." },
-  { value: "LEFT JOIN", label: "ربط يساري (Left Join)", description: "تضمين كافة صفوف الجدول الأساسي، مع الصفوف المتطابقة من الجدول المنضم." },
-  { value: "RIGHT JOIN", label: "ربط يميني (Right Join)", description: "تضمين كافة صفوف الجدول المنضم، مع الصفوف المتطابقة من الجدول الأساسي." },
-  { value: "FULL OUTER JOIN", label: "ربط خارجي كامل (Full Join)", description: "تضمين كافة الصفوف من كلا الجدولين، مع المطابقة حيثما أمكن." },
+  { value: "INNER JOIN", label: "ربط داخلي (Inner)" },
+  { value: "LEFT JOIN", label: "ربط يساري (Left)" },
+  { value: "RIGHT JOIN", label: "ربط يميني (Right)" },
+  { value: "FULL OUTER JOIN", label: "ربط كامل (Full)" },
 ];
 
 export const JoinClauseRow = ({
@@ -21,122 +20,97 @@ export const JoinClauseRow = ({
     onChange({ ...join, [field]: value });
   };
 
-  // Get metadata for the currently selected source and target tables
   const sourceTableMetadata = allTables.find(t => t.name === join.sourceTable);
   const targetTableMetadata = allTables.find(t => t.name === join.targetTable);
   
   const sourceTableColumns = sourceTableMetadata?.columns.map(c => c.name) || [];
   const targetTableColumns = targetTableMetadata?.columns.map(c => c.name) || [];
 
+  const selectClass = "w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none appearance-none cursor-pointer";
+
   return (
-    <div className="flex flex-wrap items-center gap-3 p-3 border rounded-xl bg-background shadow-sm">
-      
-      {/* Join Type Selector */}
-      <div className="w-44">
-        <Select
+    <div className="group relative flex flex-wrap items-center gap-3 p-5 bg-slate-50/50 hover:bg-white border border-slate-200 hover:border-indigo-200 rounded-[1.5rem] transition-all duration-300">
+      <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+        <ArrowRightLeft size={12} />
+      </div>
+
+      {/* نوع الربط */}
+      <div className="min-w-[140px]">
+        <select 
+          className={selectClass}
           value={join.joinType}
-          onValueChange={(val) => handleFieldChange('joinType', val)}
+          onChange={(e) => handleFieldChange('joinType', e.target.value)}
         >
-          <SelectTrigger className="w-full rounded-lg">
-            <SelectValue placeholder="نوع الربط" />
-          </SelectTrigger>
-          <SelectContent>
-            {JOIN_TYPES.map(type => (
-              <SelectItem key={type.value} value={type.value} title={type.description}>
-                {type.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          {JOIN_TYPES.map(type => (
+            <option key={type.value} value={type.value}>{type.label}</option>
+          ))}
+        </select>
       </div>
 
-      {/* Target Table Selector (The table being added) */}
+      {/* الجدول الهدف */}
       <div className="flex-1 min-w-[120px]">
-        <Select
+        <select 
+          className={cn(selectClass, "font-bold text-indigo-700")}
           value={join.targetTable}
-          onValueChange={(val) => handleFieldChange('targetTable', val)}
+          onChange={(e) => handleFieldChange('targetTable', e.target.value)}
         >
-          <SelectTrigger className="w-full rounded-lg">
-            <SelectValue placeholder="الجدول الهدف" />
-          </SelectTrigger>
-          <SelectContent>
-            {allTables.map(table => (
-              <SelectItem key={table.name} value={table.name}>{table.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          <option value="">اختر الجدول...</option>
+          {allTables.map(table => (
+            <option key={table.name} value={table.name}>{table.name}</option>
+          ))}
+        </select>
       </div>
 
-      <span className="text-sm font-medium text-muted-foreground">على</span>
+      <span className="text-xs font-black text-slate-400 uppercase">على</span>
 
-      {/* Source Table Selector (The table already in the query) */}
-      <div className="flex-1 min-w-[120px]">
-        <Select
+      {/* الجدول والعمود المصدر */}
+      <div className="flex flex-1 gap-1 min-w-[200px]">
+        <select 
+          className={cn(selectClass, "w-1/2")}
           value={join.sourceTable}
-          onValueChange={(val) => handleFieldChange('sourceTable', val)}
-          disabled={availableSourceTables.length === 0}
+          onChange={(e) => handleFieldChange('sourceTable', e.target.value)}
         >
-          <SelectTrigger className="w-full rounded-lg">
-            <SelectValue placeholder="الجدول المصدر" />
-          </SelectTrigger>
-          <SelectContent>
-            {availableSourceTables.map(table => (
-              <SelectItem key={table} value={table}>{table}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <span className="text-sm font-bold text-primary">.</span>
-
-      {/* Source Column Selector (Column from Source Table) */}
-      <div className="flex-1 min-w-[120px]">
-        <Select
+          {availableSourceTables.map(table => (
+            <option key={table} value={table}>{table}</option>
+          ))}
+        </select>
+        <select 
+          className={cn(selectClass, "w-1/2")}
           value={join.sourceColumn}
-          onValueChange={(val) => handleFieldChange('sourceColumn', val)}
+          onChange={(e) => handleFieldChange('sourceColumn', e.target.value)}
           disabled={sourceTableColumns.length === 0}
         >
-          <SelectTrigger className="w-full rounded-lg">
-            <SelectValue placeholder="العمود المصدر" />
-          </SelectTrigger>
-          <SelectContent>
-            {sourceTableColumns.map(col => (
-              <SelectItem key={col} value={col}>{col}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          <option value="">العمود...</option>
+          {sourceTableColumns.map(col => (
+            <option key={col} value={col}>{col}</option>
+          ))}
+        </select>
       </div>
 
-      <span className="text-sm font-bold text-primary">=</span>
+      <span className="text-indigo-600 font-bold">=</span>
 
-      {/* Target Column Selector (Column from Joined Table) */}
+      {/* العمود الهدف */}
       <div className="flex-1 min-w-[120px]">
-        <Select
+        <select 
+          className={selectClass}
           value={join.targetColumn}
-          onValueChange={(val) => handleFieldChange('targetColumn', val)}
+          onChange={(e) => handleFieldChange('targetColumn', e.target.value)}
           disabled={targetTableColumns.length === 0}
         >
-          <SelectTrigger className="w-full rounded-lg">
-            <SelectValue placeholder="العمود الهدف" />
-          </SelectTrigger>
-          <SelectContent>
-            {targetTableColumns.map(col => (
-              <SelectItem key={col} value={col}>{col}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          <option value="">عمود الهدف...</option>
+          {targetTableColumns.map(col => (
+            <option key={col} value={col}>{col}</option>
+          ))}
+        </select>
       </div>
 
-      {/* Actions */}
-      <Button 
-        variant="destructive" 
-        size="icon" 
+      <button 
         onClick={() => onRemove(join.id)}
-        className="rounded-full flex-shrink-0"
+        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
         title="حذف العلاقة"
       >
-        <X className="w-4 h-4" />
-      </Button>
+        <X size={18} />
+      </button>
     </div>
   );
 };

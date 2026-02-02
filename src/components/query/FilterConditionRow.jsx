@@ -1,13 +1,8 @@
 import React from 'react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { X, PlusCircle, Database, Type, ListFilter } from 'lucide-react';
+import { X, Plus, Type, Database, Layers } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 const OPERATORS = ["=", "!=", ">", "<", ">=" , "<=", "LIKE", "NOT LIKE", "IN", "NOT IN"];
-const LOGICAL_OPERATORS = ["AND", "OR"];
 
 export const FilterConditionRow = ({
   condition,
@@ -24,211 +19,136 @@ export const FilterConditionRow = ({
     onChange({ ...condition, [field]: value });
   };
 
-  const handleSubqueryChange = (field, value) => {
-    const currentSubquery = condition.subquery || { tableName: '', column: '', filters: [] };
-    handleFieldChange('subquery', { ...currentSubquery, [field]: value });
-  };
+  const selectClass = "bg-white border border-slate-200 rounded-xl py-2 px-3 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none cursor-pointer";
+  const inputClass = "bg-white border border-slate-200 rounded-xl py-2 px-4 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none";
 
-  const addSubqueryFilter = () => {
-    const currentFilters = condition.subquery?.filters || [];
-    handleSubqueryChange('filters', [
-      ...currentFilters,
-      { id: crypto.randomUUID(), column: '', operator: '=', value: '', valueType: 'literal', logicalOperator: 'AND' }
-    ]);
-  };
-
-  const updateSubqueryFilter = (updatedFilter) => {
-    const currentFilters = condition.subquery?.filters || [];
-    handleSubqueryChange('filters', currentFilters.map(f => f.id === updatedFilter.id ? updatedFilter : f));
-  };
-
-  const removeSubqueryFilter = (filterId) => {
-    const currentFilters = condition.subquery?.filters || [];
-    handleSubqueryChange('filters', currentFilters.filter(f => f.id !== filterId));
-  };
-
-  const availableColumns = columns.map(c => c.name);
   const subqueryTable = allTables.find(t => t.name === condition.subquery?.tableName);
   const subqueryColumns = subqueryTable?.columns.map(c => c.name) || [];
 
   return (
     <div className={cn(
-      "flex flex-col gap-3 p-4 border-b last:border-b-0 transition-colors",
-      isSubqueryFilter ? "bg-primary/5 rounded-xl border-2 border-primary/10" : "bg-card/30 rounded-2xl hover:bg-card/50"
+      "flex flex-col gap-4 p-5 transition-all duration-300",
+      isSubqueryFilter ? "bg-indigo-50/50 rounded-2xl border-2 border-indigo-100/50" : "bg-white border border-slate-100 rounded-[2rem] shadow-sm hover:shadow-md"
     )}>
       <div className="flex flex-wrap items-center gap-3">
+        {/* المنطق (AND/OR) */}
         {index > 0 && (
-          <div className="w-24">
-            <Select
-              value={condition.logicalOperator}
-              onValueChange={(val) => handleFieldChange('logicalOperator', val)}
-            >
-              <SelectTrigger className="w-full rounded-xl border-2">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {LOGICAL_OPERATORS.map(op => (
-                  <SelectItem key={op} value={op}>{op === 'AND' ? 'وـ (AND)' : 'أو (OR)'}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <select
+            className={cn(selectClass, "w-24 font-bold text-indigo-600 bg-indigo-50 border-indigo-100")}
+            value={condition.logicalOperator}
+            onChange={(e) => handleFieldChange('logicalOperator', e.target.value)}
+          >
+            <option value="AND">وـ (AND)</option>
+            <option value="OR">أو (OR)</option>
+          </select>
+        )}
+        
+        {index === 0 && (
+          <div className="w-24 flex items-center justify-center">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-3 py-1 rounded-full">
+              {isSubqueryFilter ? "فلتر داخلي" : "تصفية بـ"}
+            </span>
           </div>
         )}
-        {index === 0 && <span className="w-24 text-center font-black text-primary/40 text-xs tracking-widest">{isSubqueryFilter ? "WHERE (Inner)" : "WHERE"}</span>}
 
-        <div className="flex-1 min-w-[140px]">
-          <Select
+        {/* اختيار العمود */}
+        <div className="flex-1 min-w-[150px]">
+          <select
+            className={cn(selectClass, "w-full font-medium")}
             value={condition.column}
-            onValueChange={(val) => handleFieldChange('column', val)}
+            onChange={(e) => handleFieldChange('column', e.target.value)}
           >
-            <SelectTrigger className="w-full rounded-xl border-2 bg-background">
-              <SelectValue placeholder="اختر العمود" />
-            </SelectTrigger>
-            <SelectContent>
-              {availableColumns.map(col => (
-                <SelectItem key={col} value={col}>{col}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <option value="">اختر العمود...</option>
+            {columns.map(col => (
+              <option key={col.name} value={col.name}>{col.name}</option>
+            ))}
+          </select>
         </div>
 
+        {/* العملية */}
         <div className="w-24">
-          <Select
+          <select
+            className={cn(selectClass, "w-full font-mono font-bold text-center")}
             value={condition.operator}
-            onValueChange={(val) => handleFieldChange('operator', val)}
+            onChange={(e) => handleFieldChange('operator', e.target.value)}
           >
-            <SelectTrigger className="w-full rounded-xl border-2 bg-background font-mono">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {OPERATORS.map(op => (
-                <SelectItem key={op} value={op} className="font-mono">{op}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            {OPERATORS.map(op => <option key={op} value={op}>{op}</option>)}
+          </select>
         </div>
 
+        {/* نوع القيمة */}
         {!isSubqueryFilter && (
-          <div className="flex flex-col gap-1">
-            <ToggleGroup 
-              type="single" 
-              value={condition.valueType} 
-              onValueChange={(val) => val && handleFieldChange('valueType', val)}
-              className="bg-secondary/50 p-1 rounded-lg"
+          <div className="flex p-1 bg-slate-100 rounded-xl">
+            <button 
+              onClick={() => handleFieldChange('valueType', 'literal')}
+              className={cn("p-1.5 rounded-lg transition-all", condition.valueType === 'literal' ? "bg-white shadow-sm text-indigo-600" : "text-slate-400")}
+              title="قيمة نصية"
             >
-              <ToggleGroupItem value="literal" className="h-8 w-8 p-0 rounded-md" title="قيمة يدوية">
-                <Type className="h-4 w-4" />
-              </ToggleGroupItem>
-              <ToggleGroupItem value="subquery" className="h-8 w-8 p-0 rounded-md" title="من جدول آخر">
-                <Database className="h-4 w-4" />
-              </ToggleGroupItem>
-            </ToggleGroup>
+              <Type size={16} />
+            </button>
+            <button 
+              onClick={() => handleFieldChange('valueType', 'subquery')}
+              className={cn("p-1.5 rounded-lg transition-all", condition.valueType === 'subquery' ? "bg-white shadow-sm text-indigo-600" : "text-slate-400")}
+              title="استعلام فرعي"
+            >
+              <Database size={16} />
+            </button>
           </div>
         )}
 
-        <div className="flex-grow min-w-[200px] flex gap-2">
+        {/* إدخال القيمة */}
+        <div className="flex-grow min-w-[200px]">
           {condition.valueType === 'literal' ? (
-            <Input
-              placeholder="أدخل القيمة..."
+            <input
+              type="text"
+              placeholder="القيمة المطلوبة..."
+              className={cn(inputClass, "w-full")}
               value={condition.value}
               onChange={(e) => handleFieldChange('value', e.target.value)}
-              className="rounded-xl border-2 bg-background h-10"
             />
           ) : (
-            <div className="flex gap-2 w-full">
-              <Select
+            <div className="flex gap-2">
+              <select 
+                className={cn(selectClass, "flex-1 bg-indigo-50/50")}
                 value={condition.subquery?.tableName}
-                onValueChange={(val) => handleSubqueryChange('tableName', val)}
+                onChange={(e) => handleFieldChange('subquery', { ...condition.subquery, tableName: e.target.value })}
               >
-                <SelectTrigger className="flex-1 rounded-xl border-2 bg-primary/5 h-10">
-                  <SelectValue placeholder="اختر الجدول" />
-                </SelectTrigger>
-                <SelectContent>
-                  {allTables.map(t => (
-                    <SelectItem key={t.name} value={t.name}>{t.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select
+                <option value="">الجدول...</option>
+                {allTables.map(t => <option key={t.name} value={t.name}>{t.name}</option>)}
+              </select>
+              <select 
+                className={cn(selectClass, "flex-1 bg-indigo-50/50")}
                 value={condition.subquery?.column}
-                onValueChange={(val) => handleSubqueryChange('column', val)}
+                onChange={(e) => handleFieldChange('subquery', { ...condition.subquery, column: e.target.value })}
                 disabled={!condition.subquery?.tableName}
               >
-                <SelectTrigger className="flex-1 rounded-xl border-2 bg-primary/5 h-10">
-                  <SelectValue placeholder="العمود" />
-                </SelectTrigger>
-                <SelectContent>
-                  {subqueryColumns.map(col => (
-                    <SelectItem key={col} value={col}>{col}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <option value="">العمود...</option>
+                {subqueryColumns.map(col => <option key={col} value={col}>{col}</option>)}
+              </select>
             </div>
           )}
         </div>
 
-        <div className="flex gap-2 items-center">
+        {/* أزرار التحكم */}
+        <div className="flex gap-1">
           {index === totalConditions - 1 && onAdd && (
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={onAdd}
-              className="rounded-full text-primary hover:bg-primary/10 h-10 w-10"
-              title="إضافة شرط"
-            >
-              <PlusCircle className="w-5 h-5" />
-            </Button>
+            <button onClick={onAdd} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors">
+              <Plus size={20} />
+            </button>
           )}
-          {(totalConditions > 1 || isSubqueryFilter) && (
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => onRemove(condition.id)}
-              className="rounded-full text-destructive hover:bg-destructive/10 h-10 w-10"
-              title="حذف الشرط"
-            >
-              <X className="w-5 h-5" />
-            </Button>
-          )}
+          <button onClick={() => onRemove(condition.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors">
+            <X size={20} />
+          </button>
         </div>
       </div>
 
+      {/* عرض الاستعلام الفرعي إذا تم اختياره */}
       {condition.valueType === 'subquery' && condition.subquery?.tableName && (
-        <div className="mt-2 ms-12 p-4 border-l-4 border-primary/20 bg-primary/5 rounded-r-2xl space-y-3">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-bold text-primary flex items-center gap-2 uppercase tracking-wider">
-              <ListFilter className="w-3 h-3" /> شروط الاستعلام الفرعي ({condition.subquery.tableName})
-            </p>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={addSubqueryFilter}
-              className="h-7 text-[10px] font-bold rounded-lg border-primary/30 hover:bg-primary/10"
-            >
-              <PlusCircle className="w-3 h-3 ms-1" /> إضافة شرط داخلي
-            </Button>
-          </div>
-          
-          <div className="space-y-2">
-            {condition.subquery.filters.length === 0 ? (
-              <p className="text-[10px] text-muted-foreground italic">لا توجد شروط داخلية.</p>
-            ) : (
-              condition.subquery.filters.map((f, i) => (
-                <FilterConditionRow
-                  key={f.id}
-                  condition={f}
-                  columns={subqueryTable?.columns || []}
-                  allTables={allTables}
-                  index={i}
-                  totalConditions={condition.subquery?.filters.length || 0}
-                  onChange={updateSubqueryFilter}
-                  onRemove={() => removeSubqueryFilter(f.id)}
-                  onAdd={addSubqueryFilter}
-                  isSubqueryFilter={true}
-                />
-              ))
-            )}
-          </div>
+        <div className="ms-10 p-4 border-r-4 border-indigo-200 bg-indigo-50/30 rounded-l-2xl flex items-center gap-3">
+          <Layers className="text-indigo-400" size={16} />
+          <span className="text-xs font-bold text-indigo-700">
+            سيتم البحث في <span className="underline">{condition.subquery.tableName}</span> بناءً على عمود <span className="underline">{condition.subquery.column}</span>
+          </span>
         </div>
       )}
     </div>
