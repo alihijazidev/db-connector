@@ -1,6 +1,6 @@
 import React from 'react';
-import { Group, Select, ActionIcon, Paper, Text, Box, ThemeIcon, Stack } from '@mantine/core';
-import { X, ArrowRightLeft, Database, Link as LinkIcon, Table as TableIcon } from 'lucide-react';
+import { Group, Select, ActionIcon, Paper, Text, Box, ThemeIcon, Stack, Popover, List, Badge } from '@mantine/core';
+import { X, Database, Link as LinkIcon, Table as TableIcon, Info, CircleHelp } from 'lucide-react';
 
 const JOIN_TYPES = [
   { value: "INNER JOIN", label: "ربط داخلي (Inner)" },
@@ -8,6 +8,26 @@ const JOIN_TYPES = [
   { value: "RIGHT JOIN", label: "ربط يميني (Right)" },
   { value: "FULL OUTER JOIN", label: "ربط كامل (Full)" },
 ];
+
+const JoinInfoContent = () => (
+  <Stack gap="md" p="xs">
+    <Text fw={900} size="sm" c="indigo">شرح أنواع الربط:</Text>
+    <List size="xs" spacing="xs" center>
+      <List.Item icon={<Badge size="xs" circle color="indigo">1</Badge>}>
+        <Text size="xs"><b>الداخلي:</b> يجلب فقط السجلات المتطابقة في كلا الجدولين.</Text>
+      </List.Item>
+      <List.Item icon={<Badge size="xs" circle color="blue">2</Badge>}>
+        <Text size="xs"><b>اليساري:</b> كل سجلات الجدول الأول + المتطابق من الثاني.</Text>
+      </List.Item>
+      <List.Item icon={<Badge size="xs" circle color="orange">3</Badge>}>
+        <Text size="xs"><b>اليميني:</b> كل سجلات الجدول الثاني + المتطابق من الأول.</Text>
+      </List.Item>
+      <List.Item icon={<Badge size="xs" circle color="teal">4</Badge>}>
+        <Text size="xs"><b>الكامل:</b> جميع السجلات من الجدولين سواء وجد تطابق أم لا.</Text>
+      </List.Item>
+    </List>
+  </Stack>
+);
 
 export const JoinClauseRow = ({
   join,
@@ -34,17 +54,32 @@ export const JoinClauseRow = ({
       className="bg-white/50 hover:bg-white transition-all duration-300 border-slate-100 shadow-sm hover:shadow-md"
     >
       <Stack gap="md">
-        <Group wrap="nowrap" align="flex-end" grow>
-          {/* نوع الربط */}
-          <Select
-            label="نوع الربط"
-            placeholder="اختر النوع"
-            data={JOIN_TYPES}
-            value={join.joinType}
-            onChange={(val) => handleFieldChange('joinType', val)}
-            radius="xl"
-            leftSection={<LinkIcon size={16} className="text-indigo-500" />}
-          />
+        <Group wrap="nowrap" align="flex-end">
+          {/* نوع الربط مع أيقونة الشرح */}
+          <Box style={{ flex: 1 }}>
+            <Group gap={8} align="flex-end" wrap="nowrap">
+              <Select
+                label="نوع الربط"
+                placeholder="اختر النوع"
+                data={JOIN_TYPES}
+                value={join.joinType}
+                onChange={(val) => handleFieldChange('joinType', val)}
+                radius="xl"
+                className="flex-1"
+                leftSection={<LinkIcon size={16} className="text-indigo-500" />}
+              />
+              <Popover width={280} position="bottom" withArrow shadow="md" radius="lg">
+                <Popover.Target>
+                  <ActionIcon variant="light" color="indigo" size="lg" radius="xl" mb={4}>
+                    <CircleHelp size={20} />
+                  </ActionIcon>
+                </Popover.Target>
+                <Popover.Dropdown>
+                  <JoinInfoContent />
+                </Popover.Dropdown>
+              </Popover>
+            </Group>
+          </Box>
 
           {/* الجدول المستهدف */}
           <Select
@@ -55,6 +90,7 @@ export const JoinClauseRow = ({
             onChange={(val) => handleFieldChange('targetTable', val)}
             radius="xl"
             searchable
+            style={{ flex: 1 }}
             leftSection={<TableIcon size={16} className="text-amber-500" />}
             styles={{ input: { fontWeight: 900 } }}
           />
