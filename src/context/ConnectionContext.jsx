@@ -1,21 +1,13 @@
-import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
-import { ConnectionDetails, DatabaseType } from '@/types/database';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 import { toast } from 'sonner';
 
-interface ConnectionContextType {
-  connections: ConnectionDetails[];
-  activeConnectionId: string | null;
-  addConnection: (details: Omit<ConnectionDetails, 'id'>) => Promise<boolean>;
-  setActiveConnection: (id: string | null) => void;
-}
+const ConnectionContext = createContext(undefined);
 
-const ConnectionContext = createContext<ConnectionContextType | undefined>(undefined);
-
-const MOCK_DB_TYPES: DatabaseType[] = ["PostgreSQL", "MySQL", "SQL Server", "SQLite"];
+const MOCK_DB_TYPES = ["PostgreSQL", "MySQL", "SQL Server", "SQLite"];
 const MOCK_DATABASES = ["production_db", "staging_db", "analytics_warehouse", "user_data_store", "test_env"];
 const STORAGE_KEY = 'db_connections';
 
-const simulateConnectionTest = (details: Omit<ConnectionDetails, 'id'>): Promise<boolean> => {
+const simulateConnectionTest = (details) => {
   return new Promise((resolve) => {
     setTimeout(() => {
       if (details.name.toLowerCase().includes('fail')) {
@@ -27,14 +19,13 @@ const simulateConnectionTest = (details: Omit<ConnectionDetails, 'id'>): Promise
   });
 };
 
-const loadConnections = (): ConnectionDetails[] => {
+const loadConnections = () => {
   if (typeof window !== 'undefined') {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       try {
-        return JSON.parse(stored) as ConnectionDetails[];
+        return JSON.parse(stored);
       } catch (e) {
-        console.error("Failed to parse stored connections:", e);
         return [];
       }
     }
@@ -42,29 +33,27 @@ const loadConnections = (): ConnectionDetails[] => {
   return [];
 };
 
-const saveConnections = (connections: ConnectionDetails[]) => {
+const saveConnections = (connections) => {
   if (typeof window !== 'undefined') {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(connections));
   }
 };
 
-export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
-  const [connections, setConnections] = useState<ConnectionDetails[]>(loadConnections);
-  const [activeConnectionId, setActiveConnectionId] = useState<string | null>(null);
+export const ConnectionProvider = ({ children }) => {
+  const [connections, setConnections] = useState(loadConnections);
+  const [activeConnectionId, setActiveConnectionId] = useState(null);
 
   useEffect(() => {
     saveConnections(connections);
   }, [connections]);
 
-  const addConnection = async (details: Omit<ConnectionDetails, 'id'>): Promise<boolean> => {
+  const addConnection = async (details) => {
     const loadingToastId = toast.loading(`جاري محاولة الاتصال بـ ${details.name}...`);
-    
     const isSuccessful = await simulateConnectionTest(details);
-
     toast.dismiss(loadingToastId);
 
     if (isSuccessful) {
-      const newConnection: ConnectionDetails = {
+      const newConnection = {
         ...details,
         id: crypto.randomUUID(),
       };
@@ -78,7 +67,7 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const setActiveConnection = (id: string | null) => {
+  const setActiveConnection = (id) => {
     setActiveConnectionId(id);
   };
 

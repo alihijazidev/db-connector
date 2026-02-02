@@ -3,26 +3,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { X, PlusCircle, Database, Type, ListFilter } from 'lucide-react';
-import { ColumnMetadata, FilterCondition, LogicalOperator, Operator, TableMetadata } from '@/types/database';
 import { cn } from '@/lib/utils';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
-interface FilterConditionRowProps {
-  condition: FilterCondition;
-  columns: ColumnMetadata[];
-  allTables: TableMetadata[];
-  index: number;
-  totalConditions: number;
-  onChange: (condition: FilterCondition) => void;
-  onRemove: (id: string) => void;
-  onAdd: () => void;
-  isSubqueryFilter?: boolean; // Prop to styling nested filters
-}
+const OPERATORS = ["=", "!=", ">", "<", ">=" , "<=", "LIKE", "NOT LIKE", "IN", "NOT IN"];
+const LOGICAL_OPERATORS = ["AND", "OR"];
 
-const OPERATORS: Operator[] = ["=", "!=", ">", "<", ">=" , "<=", "LIKE", "NOT LIKE", "IN", "NOT IN"];
-const LOGICAL_OPERATORS: LogicalOperator[] = ["AND", "OR"];
-
-export const FilterConditionRow: React.FC<FilterConditionRowProps> = ({
+export const FilterConditionRow = ({
   condition,
   columns,
   allTables,
@@ -33,16 +20,15 @@ export const FilterConditionRow: React.FC<FilterConditionRowProps> = ({
   onAdd,
   isSubqueryFilter = false,
 }) => {
-  const handleFieldChange = (field: keyof FilterCondition, value: any) => {
+  const handleFieldChange = (field, value) => {
     onChange({ ...condition, [field]: value });
   };
 
-  const handleSubqueryChange = (field: keyof any, value: any) => {
+  const handleSubqueryChange = (field, value) => {
     const currentSubquery = condition.subquery || { tableName: '', column: '', filters: [] };
     handleFieldChange('subquery', { ...currentSubquery, [field]: value });
   };
 
-  // Add a simple filter to the subquery
   const addSubqueryFilter = () => {
     const currentFilters = condition.subquery?.filters || [];
     handleSubqueryChange('filters', [
@@ -51,14 +37,12 @@ export const FilterConditionRow: React.FC<FilterConditionRowProps> = ({
     ]);
   };
 
-  // Update a specific filter within the subquery
-  const updateSubqueryFilter = (updatedFilter: FilterCondition) => {
+  const updateSubqueryFilter = (updatedFilter) => {
     const currentFilters = condition.subquery?.filters || [];
     handleSubqueryChange('filters', currentFilters.map(f => f.id === updatedFilter.id ? updatedFilter : f));
   };
 
-  // Remove a specific filter from the subquery
-  const removeSubqueryFilter = (filterId: string) => {
+  const removeSubqueryFilter = (filterId) => {
     const currentFilters = condition.subquery?.filters || [];
     handleSubqueryChange('filters', currentFilters.filter(f => f.id !== filterId));
   };
@@ -73,12 +57,11 @@ export const FilterConditionRow: React.FC<FilterConditionRowProps> = ({
       isSubqueryFilter ? "bg-primary/5 rounded-xl border-2 border-primary/10" : "bg-card/30 rounded-2xl hover:bg-card/50"
     )}>
       <div className="flex flex-wrap items-center gap-3">
-        {/* Logical Operator */}
         {index > 0 && (
           <div className="w-24">
             <Select
               value={condition.logicalOperator}
-              onValueChange={(val) => handleFieldChange('logicalOperator', val as LogicalOperator)}
+              onValueChange={(val) => handleFieldChange('logicalOperator', val)}
             >
               <SelectTrigger className="w-full rounded-xl border-2">
                 <SelectValue />
@@ -93,7 +76,6 @@ export const FilterConditionRow: React.FC<FilterConditionRowProps> = ({
         )}
         {index === 0 && <span className="w-24 text-center font-black text-primary/40 text-xs tracking-widest">{isSubqueryFilter ? "WHERE (Inner)" : "WHERE"}</span>}
 
-        {/* Main Column */}
         <div className="flex-1 min-w-[140px]">
           <Select
             value={condition.column}
@@ -110,11 +92,10 @@ export const FilterConditionRow: React.FC<FilterConditionRowProps> = ({
           </Select>
         </div>
 
-        {/* Operator */}
         <div className="w-24">
           <Select
             value={condition.operator}
-            onValueChange={(val) => handleFieldChange('operator', val as Operator)}
+            onValueChange={(val) => handleFieldChange('operator', val)}
           >
             <SelectTrigger className="w-full rounded-xl border-2 bg-background font-mono">
               <SelectValue />
@@ -127,7 +108,6 @@ export const FilterConditionRow: React.FC<FilterConditionRowProps> = ({
           </Select>
         </div>
 
-        {/* Value Source Switcher */}
         {!isSubqueryFilter && (
           <div className="flex flex-col gap-1">
             <ToggleGroup 
@@ -146,7 +126,6 @@ export const FilterConditionRow: React.FC<FilterConditionRowProps> = ({
           </div>
         )}
 
-        {/* Value Input Area */}
         <div className="flex-grow min-w-[200px] flex gap-2">
           {condition.valueType === 'literal' ? (
             <Input
@@ -188,7 +167,6 @@ export const FilterConditionRow: React.FC<FilterConditionRowProps> = ({
           )}
         </div>
 
-        {/* Actions */}
         <div className="flex gap-2 items-center">
           {index === totalConditions - 1 && onAdd && (
             <Button 
@@ -215,7 +193,6 @@ export const FilterConditionRow: React.FC<FilterConditionRowProps> = ({
         </div>
       </div>
 
-      {/* Subquery WHERE Clause Section */}
       {condition.valueType === 'subquery' && condition.subquery?.tableName && (
         <div className="mt-2 ms-12 p-4 border-l-4 border-primary/20 bg-primary/5 rounded-r-2xl space-y-3">
           <div className="flex items-center justify-between mb-2">
@@ -234,13 +211,13 @@ export const FilterConditionRow: React.FC<FilterConditionRowProps> = ({
           
           <div className="space-y-2">
             {condition.subquery.filters.length === 0 ? (
-              <p className="text-[10px] text-muted-foreground italic">لا توجد شروط داخلية (سيتم جلب كافة البيانات من العمود المختار).</p>
+              <p className="text-[10px] text-muted-foreground italic">لا توجد شروط داخلية.</p>
             ) : (
               condition.subquery.filters.map((f, i) => (
                 <FilterConditionRow
                   key={f.id}
                   condition={f}
-                  columns={subqueryTable?.columns.map(col => ({ ...col, name: col.name })) || []}
+                  columns={subqueryTable?.columns || []}
                   allTables={allTables}
                   index={i}
                   totalConditions={condition.subquery?.filters.length || 0}

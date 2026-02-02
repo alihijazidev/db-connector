@@ -6,7 +6,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Table as TableIcon, Columns, Play, PlusCircle, Link, Filter, CheckCircle2, Code, ChevronDown, Check } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchDatabaseMetadata, executeQuery } from '@/api/mockDatabaseApi';
-import { ColumnMetadata, FilterCondition, QueryDefinition, QueryResult, TableMetadata, JoinClause } from '@/types/database';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -21,31 +20,30 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 
 const DEFAULT_LIMIT = 10;
 
-const QueryBuilderPage: React.FC = () => {
-  const { connectionId } = useParams<{ connectionId: string }>();
+const QueryBuilderPage = () => {
+  const { connectionId } = useParams();
   const { connections } = useConnection();
   
   const connection = connections.find(c => c.id === connectionId);
 
-  // --- State ---
-  const [selectedTableName, setSelectedTableName] = useState<string>('');
+  const [selectedTableName, setSelectedTableName] = useState('');
   const [isTableSelectorOpen, setIsTableSelectorOpen] = useState(false);
-  const [selectedColumns, setSelectedColumns] = useState<string[]>(['*']);
-  const [filters, setFilters] = useState<FilterCondition[]>([]);
-  const [joins, setJoins] = useState<JoinClause[]>([]);
+  const [selectedColumns, setSelectedColumns] = useState(['*']);
+  const [filters, setFilters] = useState([]);
+  const [joins, setJoins] = useState([]);
   const [offset, setOffset] = useState(0);
 
   const { data: metadata, isLoading: isLoadingMetadata } = useQuery({
     queryKey: ['dbMetadata', connectionId],
-    queryFn: () => fetchDatabaseMetadata(connectionId!),
+    queryFn: () => fetchDatabaseMetadata(connectionId),
     enabled: !!connectionId,
   });
 
-  const tablesInQuery: TableMetadata[] = useMemo(() => {
+  const tablesInQuery = useMemo(() => {
     if (!metadata || !selectedTableName) return [];
     const primary = metadata.tables.find(t => t.name === selectedTableName);
     if (!primary) return [];
-    const joined = joins.map(j => metadata.tables.find(t => t.name === j.targetTable)).filter((t): t is TableMetadata => !!t);
+    const joined = joins.map(j => metadata.tables.find(t => t.name === j.targetTable)).filter(t => !!t);
     const result = [primary];
     joined.forEach(t => {
       if (!result.find(existing => existing.name === t.name)) result.push(t);
@@ -53,13 +51,13 @@ const QueryBuilderPage: React.FC = () => {
     return result;
   }, [metadata, selectedTableName, joins]);
 
-  const allAvailableColumns: ColumnMetadata[] = useMemo(() => {
+  const allAvailableColumns = useMemo(() => {
     return tablesInQuery.flatMap(table => 
       table.columns.map(col => ({ ...col, name: `${table.name}.${col.name}` }))
     );
   }, [tablesInQuery]);
 
-  const handlePrimaryTableChange = (newTable: string) => {
+  const handlePrimaryTableChange = (newTable) => {
     setSelectedTableName(newTable);
     setFilters([{ id: crypto.randomUUID(), column: '', operator: '=', value: '', valueType: 'literal', logicalOperator: 'AND' }]);
     setSelectedColumns(['*']);
@@ -68,8 +66,8 @@ const QueryBuilderPage: React.FC = () => {
     setIsTableSelectorOpen(false);
   };
 
-  const queryDefinition: QueryDefinition = useMemo(() => ({
-    connectionId: connectionId!,
+  const queryDefinition = useMemo(() => ({
+    connectionId,
     tableName: selectedTableName,
     joins: joins.filter(j => j.sourceTable && j.targetTable && j.sourceColumn && j.targetColumn),
     columns: selectedColumns,
@@ -80,7 +78,7 @@ const QueryBuilderPage: React.FC = () => {
     offset: offset,
   }), [connectionId, selectedTableName, joins, selectedColumns, filters, offset]);
 
-  const { data: queryResult, isFetching: isExecutingQuery, refetch: executeQueryRefetch } = useQuery<QueryResult>({
+  const { data: queryResult, isFetching: isExecutingQuery, refetch: executeQueryRefetch } = useQuery({
     queryKey: ['queryResults', queryDefinition],
     queryFn: () => executeQuery(queryDefinition),
     enabled: false,
@@ -94,7 +92,7 @@ const QueryBuilderPage: React.FC = () => {
     executeQueryRefetch();
   };
 
-  const handlePageChange = (newOffset: number) => {
+  const handlePageChange = (newOffset) => {
     setOffset(newOffset);
     setTimeout(() => executeQueryRefetch(), 0);
   };
@@ -115,8 +113,6 @@ const QueryBuilderPage: React.FC = () => {
         </header>
 
         <div className="grid grid-cols-1 gap-8">
-          
-          {/* STEP 1: SELECT TABLE */}
           <QueryBuilderSection 
             title="الخطوة 1: الجدول الأساسي" 
             description="ابحث عن الجدول الرئيسي واختره لبدء الاستعلام."
@@ -174,7 +170,6 @@ const QueryBuilderPage: React.FC = () => {
 
           {selectedTableName && (
             <>
-              {/* STEP 2: JOINS */}
               <QueryBuilderSection 
                 title="الخطوة 2: العلاقات (Joins)" 
                 description="اربط جداول إضافية بالجدول الأساسي لجلب بيانات مرتبطة."
@@ -198,7 +193,6 @@ const QueryBuilderPage: React.FC = () => {
                 </div>
               </QueryBuilderSection>
 
-              {/* STEP 3: FILTERS */}
               <QueryBuilderSection 
                 title="الخطوة 3: الشروط (Filters)" 
                 description="قم بتصفية النتائج بناءً على قيم محددة أو استعلامات من جداول أخرى."
@@ -222,7 +216,6 @@ const QueryBuilderPage: React.FC = () => {
                 </div>
               </QueryBuilderSection>
 
-              {/* STEP 4: COLUMNS */}
               <QueryBuilderSection 
                 title="الخطوة 4: تحديد الأعمدة" 
                 description="اختر الأعمدة التي تريد عرضها في النتائج."
@@ -264,7 +257,6 @@ const QueryBuilderPage: React.FC = () => {
                 </div>
               </QueryBuilderSection>
 
-              {/* Action Button Section */}
               <div className="flex justify-center py-6">
                 <Button 
                   onClick={handleExecuteQuery} 

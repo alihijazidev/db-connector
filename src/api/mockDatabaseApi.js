@@ -1,8 +1,6 @@
-import { DatabaseMetadata, QueryDefinition, QueryResult, ColumnMetadata } from "@/types/database";
-
 // --- Mock Data ---
 
-const MOCK_USERS_COLUMNS: ColumnMetadata[] = [
+const MOCK_USERS_COLUMNS = [
   { name: "id", dataType: "INT", isNullable: false },
   { name: "username", dataType: "VARCHAR", isNullable: false },
   { name: "email", dataType: "VARCHAR", isNullable: false },
@@ -10,14 +8,14 @@ const MOCK_USERS_COLUMNS: ColumnMetadata[] = [
   { name: "is_active", dataType: "BOOLEAN", isNullable: true },
 ];
 
-const MOCK_PRODUCTS_COLUMNS: ColumnMetadata[] = [
+const MOCK_PRODUCTS_COLUMNS = [
   { name: "product_id", dataType: "INT", isNullable: false },
   { name: "name", dataType: "VARCHAR", isNullable: false },
   { name: "price", dataType: "DECIMAL", isNullable: false },
   { name: "stock", dataType: "INT", isNullable: false },
 ];
 
-const MOCK_ORDERS_COLUMNS: ColumnMetadata[] = [
+const MOCK_ORDERS_COLUMNS = [
   { name: "order_id", dataType: "INT", isNullable: false },
   { name: "user_id", dataType: "INT", isNullable: false },
   { name: "product_id", dataType: "INT", isNullable: false },
@@ -25,7 +23,7 @@ const MOCK_ORDERS_COLUMNS: ColumnMetadata[] = [
   { name: "order_date", dataType: "TIMESTAMP", isNullable: false },
 ];
 
-const MOCK_METADATA: DatabaseMetadata = {
+const MOCK_METADATA = {
   tables: [
     { name: "users", columns: MOCK_USERS_COLUMNS },
     { name: "products", columns: MOCK_PRODUCTS_COLUMNS },
@@ -58,36 +56,28 @@ const MOCK_ORDER_DATA = [
   { order_id: 5, user_id: 6, product_id: 102, quantity: 3, order_date: "2023-11-20" },
 ];
 
-// --- API Functions ---
-
-export const fetchDatabaseMetadata = (connectionId: string): Promise<DatabaseMetadata> => {
-  console.log(`[Mock API] Fetching metadata for connection: ${connectionId}`);
+export const fetchDatabaseMetadata = (connectionId) => {
   return new Promise((resolve) => {
     setTimeout(() => resolve(MOCK_METADATA), 600);
   });
 };
 
-export const executeQuery = (query: QueryDefinition): Promise<QueryResult> => {
-  console.log(`[Mock API] Executing query on: ${query.tableName}`, query);
-
+export const executeQuery = (query) => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      let sourceData: any[] = [];
+      let sourceData = [];
       if (query.tableName === 'users') sourceData = MOCK_USER_DATA;
       else if (query.tableName === 'products') sourceData = MOCK_PRODUCT_DATA;
       else if (query.tableName === 'orders') sourceData = MOCK_ORDER_DATA;
 
       let filteredData = [...sourceData];
 
-      // Simple mock filtering logic
       if (query.filters && query.filters.length > 0) {
         query.filters.forEach(filter => {
-          // Simulation of subquery logic: If user filters users by ID using a subquery from orders
           if (filter.valueType === 'subquery' && filter.column === 'id' && filter.subquery?.tableName === 'orders') {
             const userIdsWithOrders = Array.from(new Set(MOCK_ORDER_DATA.map(o => o.user_id)));
             filteredData = filteredData.filter(row => userIdsWithOrders.includes(row.id));
           } 
-          // Simulation of literal filtering
           else if (filter.valueType === 'literal' && filter.value) {
             const val = filter.value.toLowerCase();
             filteredData = filteredData.filter(row => {
@@ -100,13 +90,12 @@ export const executeQuery = (query: QueryDefinition): Promise<QueryResult> => {
         });
       }
 
-      // Column selection
       const columnsToReturn = query.columns.includes('*') 
         ? (filteredData.length > 0 ? Object.keys(filteredData[0]) : [])
         : query.columns.map(c => c.includes('.') ? c.split('.')[1] : c);
 
       const finalData = filteredData.slice(query.offset, query.offset + query.limit).map(row => {
-        const newRow: any = {};
+        const newRow = {};
         columnsToReturn.forEach(col => {
           newRow[col] = row[col];
         });
