@@ -1,19 +1,11 @@
 import React from 'react';
-import { QueryResult } from '@/types/database';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Info } from 'lucide-react';
 
-interface DataTableProps {
-  result: QueryResult;
-  limit: number;
-  offset: number;
-  onPageChange: (newOffset: number) => void;
-}
-
-export const DataTable: React.FC<DataTableProps> = ({ result, limit, offset, onPageChange }) => {
+export const DataTable = ({ result, limit, offset, onPageChange }) => {
   const { columns, data, totalRows } = result;
   const currentPage = Math.floor(offset / limit) + 1;
   const totalPages = Math.ceil(totalRows / limit);

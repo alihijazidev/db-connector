@@ -2,31 +2,22 @@ import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
-import { JoinClause, JoinType, TableMetadata } from '@/types/database';
 
-interface JoinClauseRowProps {
-  join: JoinClause;
-  allTables: TableMetadata[];
-  availableSourceTables: string[]; // Tables already included in the query (primary + previous joins)
-  onChange: (join: JoinClause) => void;
-  onRemove: (id: string) => void;
-}
-
-const JOIN_TYPES: { value: JoinType, label: string, description: string }[] = [
+const JOIN_TYPES = [
   { value: "INNER JOIN", label: "ربط داخلي (Inner Join)", description: "تضمين الصفوف التي لها تطابق في كلا الجدولين فقط." },
   { value: "LEFT JOIN", label: "ربط يساري (Left Join)", description: "تضمين كافة صفوف الجدول الأساسي، مع الصفوف المتطابقة من الجدول المنضم." },
   { value: "RIGHT JOIN", label: "ربط يميني (Right Join)", description: "تضمين كافة صفوف الجدول المنضم، مع الصفوف المتطابقة من الجدول الأساسي." },
   { value: "FULL OUTER JOIN", label: "ربط خارجي كامل (Full Join)", description: "تضمين كافة الصفوف من كلا الجدولين، مع المطابقة حيثما أمكن." },
 ];
 
-export const JoinClauseRow: React.FC<JoinClauseRowProps> = ({
+export const JoinClauseRow = ({
   join,
   allTables,
   availableSourceTables,
   onChange,
   onRemove,
 }) => {
-  const handleFieldChange = (field: keyof JoinClause, value: string) => {
+  const handleFieldChange = (field, value) => {
     onChange({ ...join, [field]: value });
   };
 
@@ -44,7 +35,7 @@ export const JoinClauseRow: React.FC<JoinClauseRowProps> = ({
       <div className="w-44">
         <Select
           value={join.joinType}
-          onValueChange={(val) => handleFieldChange('joinType', val as JoinType)}
+          onValueChange={(val) => handleFieldChange('joinType', val)}
         >
           <SelectTrigger className="w-full rounded-lg">
             <SelectValue placeholder="نوع الربط" />

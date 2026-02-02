@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useConnection, getAvailableDatabases } from "@/context/ConnectionContext";
-import { ConnectionDetails } from "@/types/database";
 import { Loader2 } from "lucide-react";
 
 const formSchema = z.object({
@@ -14,20 +13,11 @@ const formSchema = z.object({
   database: z.string().min(1, { message: "يرجى اختيار قاعدة بيانات." }),
 });
 
-type ConnectionFormValues = {
-  name: string;
-  database: string;
-};
-
-interface ConnectionFormProps {
-  onSuccess: () => void;
-}
-
-export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onSuccess }) => {
+export const ConnectionForm = ({ onSuccess }) => {
   const { addConnection } = useConnection();
   const availableDatabases = getAvailableDatabases();
 
-  const form = useForm<ConnectionFormValues>({
+  const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
@@ -37,7 +27,7 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onSuccess }) => 
 
   const { isSubmitting } = form.formState;
 
-  const onSubmit = async (values: ConnectionFormValues) => {
+  const onSubmit = async (values) => {
     const success = await addConnection({
       ...values,
       type: "PostgreSQL",
