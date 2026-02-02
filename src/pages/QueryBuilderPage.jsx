@@ -57,6 +57,17 @@ const QueryBuilderPage = () => {
     executeQueryRefetch();
   };
 
+  const handleAddFilter = () => {
+    setFilters(p => [...p, { 
+      id: crypto.randomUUID(), 
+      column: '', 
+      operator: '=', 
+      value: '', 
+      valueType: 'literal', 
+      logicalOperator: 'AND' 
+    }]);
+  };
+
   const queryDefinition = useMemo(() => ({
     connectionId,
     tableName: selectedTableName,
@@ -174,9 +185,19 @@ const QueryBuilderPage = () => {
                         totalConditions={filters.length}
                         onChange={(u) => setFilters(prev => prev.map(f => f.id === u.id ? u : f))}
                         onRemove={(id) => setFilters(prev => prev.filter(f => f.id !== id))}
-                        onAdd={() => setFilters(p => [...p, { id: crypto.randomUUID(), column: '', operator: '=', value: '', valueType: 'literal', logicalOperator: 'AND' }])}
                       />
                     ))}
+                    <Button 
+                      variant="light" 
+                      color="teal" 
+                      fullWidth 
+                      size="lg" 
+                      radius="xl" 
+                      leftSection={<PlusCircle size={20} />}
+                      onClick={handleAddFilter}
+                    >
+                      إضافة شرط تصفية جديد
+                    </Button>
                   </Stack>
                 </QueryBuilderSection>
 
