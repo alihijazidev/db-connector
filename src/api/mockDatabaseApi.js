@@ -1,5 +1,10 @@
-// --- Mock Data ---
+/**
+ * Mock Database API
+ * This file simulates a backend database by providing metadata 
+ * and executing 'queries' against local JS objects.
+ */
 
+// Schema Definitions
 const MOCK_USERS_COLUMNS = [
   { name: "id", dataType: "INT", isNullable: false },
   { name: "username", dataType: "VARCHAR", isNullable: false },
@@ -31,6 +36,7 @@ const MOCK_METADATA = {
   ],
 };
 
+// Data Store
 const MOCK_USER_DATA = [
   { id: 1, username: "alice", email: "alice@example.com", created_at: "2023-01-15", is_active: true },
   { id: 2, username: "bob", email: "bob@example.com", created_at: "2023-02-20", is_active: true },
@@ -56,15 +62,24 @@ const MOCK_ORDER_DATA = [
   { order_id: 5, user_id: 6, product_id: 102, quantity: 3, order_date: "2023-11-20" },
 ];
 
+/**
+ * Fetches database schema information.
+ */
 export const fetchDatabaseMetadata = (connectionId) => {
   return new Promise((resolve) => {
     setTimeout(() => resolve(MOCK_METADATA), 600);
   });
 };
 
+/**
+ * Executes a simulated SQL query using Javascript array methods.
+ * Supports: Filtering (WHERE), Selection (SELECT), and Pagination (LIMIT/OFFSET).
+ * @param {Object} query - Object containing tableName, filters, columns, etc.
+ */
 export const executeQuery = (query) => {
   return new Promise((resolve) => {
     setTimeout(() => {
+      // 1. Determine base dataset
       let sourceData = [];
       if (query.tableName === 'users') sourceData = MOCK_USER_DATA;
       else if (query.tableName === 'products') sourceData = MOCK_PRODUCT_DATA;
@@ -72,6 +87,7 @@ export const executeQuery = (query) => {
 
       let filteredData = [...sourceData];
 
+      // 2. Apply Filters (Simulating WHERE clause)
       if (query.filters && query.filters.length > 0) {
         filteredData = filteredData.filter(row => {
           let match = true;
@@ -95,6 +111,7 @@ export const executeQuery = (query) => {
               default: conditionMet = true;
             }
 
+            // Handle AND/OR logic
             if (idx === 0) {
               match = conditionMet;
             } else {
@@ -106,10 +123,12 @@ export const executeQuery = (query) => {
         });
       }
 
+      // 3. Select Columns
       const columnsToReturn = query.columns.includes('*') 
         ? (filteredData.length > 0 ? Object.keys(filteredData[0]) : [])
         : query.columns.map(c => c.includes('.') ? c.split('.')[1] : c);
 
+      // 4. Apply Pagination
       const finalData = filteredData.slice(query.offset, query.offset + query.limit).map(row => {
         const newRow = {};
         columnsToReturn.forEach(col => {

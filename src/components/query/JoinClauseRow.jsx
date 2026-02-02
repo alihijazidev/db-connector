@@ -2,7 +2,12 @@ import React from 'react';
 import { Group, Select, ActionIcon, Paper, Text, Box, ThemeIcon, Stack, Popover, List, Badge } from '@mantine/core';
 import { X, Database, Link as LinkIcon, Table as TableIcon, CircleHelp } from 'lucide-react';
 
-// مكون مخصص لرسم أشكال Venn Diagram لكل نوع ربط
+/**
+ * Custom SVG component to visualize SQL Join types (Venn Diagrams).
+ * Uses SVGs and clipPaths to highlight intersections.
+ * @param {string} type - SQL join type (e.g., 'LEFT JOIN')
+ * @param {number} size - Base height of the icon
+ */
 const JoinVisual = ({ type, size = 20 }) => {
   const strokeColor = "currentColor";
   const highlightColor = "var(--mantine-color-indigo-5)";
@@ -18,19 +23,18 @@ const JoinVisual = ({ type, size = 20 }) => {
         </clipPath>
       </defs>
 
-      {/* دائرة اليسار الأساسية */}
+      {/* Basic circles for A and B tables */}
       <circle cx="10" cy="10" r="8" stroke={strokeColor} strokeWidth="1.5" 
         fill={(type === 'LEFT JOIN' || type === 'FULL OUTER JOIN') ? highlightColor : 'transparent'} 
         fillOpacity={0.3} 
       />
       
-      {/* دائرة اليمين الأساسية */}
       <circle cx="20" cy="10" r="8" stroke={strokeColor} strokeWidth="1.5" 
         fill={(type === 'RIGHT JOIN' || type === 'FULL OUTER JOIN') ? highlightColor : 'transparent'} 
         fillOpacity={0.3} 
       />
 
-      {/* تظليل التقاطع (الربط الداخلي) */}
+      {/* Intersection shading logic based on join type */}
       {(type === 'INNER JOIN' || type === 'LEFT JOIN' || type === 'RIGHT JOIN' || type === 'FULL OUTER JOIN') && (
         <g clipPath="url(#circle-left)">
           <circle cx="20" cy="10" r="8" 
@@ -50,6 +54,9 @@ const JOIN_TYPES = [
   { value: "FULL OUTER JOIN", label: "ربط كامل (Full)" },
 ];
 
+/**
+ * Descriptive content for the help popover.
+ */
 const JoinInfoContent = () => (
   <Stack gap="md" p="xs">
     <Text fw={900} size="sm" c="indigo">شرح أنواع الربط:</Text>
@@ -70,6 +77,10 @@ const JoinInfoContent = () => (
   </Stack>
 );
 
+/**
+ * A row component representing a single JOIN clause in a SQL query.
+ * Manages selection of target tables and columns for ON conditions.
+ */
 export const JoinClauseRow = ({
   join,
   allTables,
@@ -96,7 +107,7 @@ export const JoinClauseRow = ({
     >
       <Stack gap="md">
         <Group wrap="nowrap" align="flex-end">
-          {/* نوع الربط مع أيقونة الشرح */}
+          {/* Join type selector with help popover */}
           <Box style={{ flex: 1 }}>
             <Group gap={8} align="flex-end" wrap="nowrap">
               <Select
@@ -128,7 +139,6 @@ export const JoinClauseRow = ({
             </Group>
           </Box>
 
-          {/* الجدول المستهدف */}
           <Select
             label="الجدول الهدف"
             placeholder="اختر الجدول"
@@ -143,6 +153,7 @@ export const JoinClauseRow = ({
           />
         </Group>
 
+        {/* Separator with label for ON condition */}
         <Box className="relative py-2">
           <div className="absolute inset-0 flex items-center" aria-hidden="true">
             <div className="w-full border-t border-dashed border-slate-200"></div>
@@ -155,7 +166,7 @@ export const JoinClauseRow = ({
         </Box>
 
         <Group wrap="nowrap" align="flex-end" grow>
-          {/* المصدر */}
+          {/* Source Column Logic */}
           <Group gap="xs" grow wrap="nowrap">
             <Select
               label="من الجدول"
@@ -184,7 +195,7 @@ export const JoinClauseRow = ({
             </ThemeIcon>
           </Box>
 
-          {/* الهدف */}
+          {/* Target Column Logic */}
           <Group gap="xs" grow wrap="nowrap">
             <Select
               label="إلى الجدول"
