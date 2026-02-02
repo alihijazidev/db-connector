@@ -1,15 +1,46 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useConnection } from '@/context/ConnectionContext';
-import { Box, Stack, Group, Text, ThemeIcon, NavLink, ScrollArea, Badge, Button, Divider } from '@mantine/core';
-import { Database, LayoutDashboard, Plus, Code, Settings, ChevronLeft, Sparkles } from 'lucide-react';
+import { Box, Stack, Group, Text, ThemeIcon, NavLink, ScrollArea, Badge, Button, Divider, Modal } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
+import { Database, LayoutDashboard, Plus, Code, Settings, Sparkles, Link as LinkIcon } from 'lucide-react';
+import { ConnectionForm } from './ConnectionForm';
 
 export const Sidebar = ({ onClose }) => {
   const { connections, activeConnectionId, setActiveConnection } = useConnection();
   const location = useLocation();
+  const [opened, { open, close }] = useDisclosure(false);
+
+  const handleAddSuccess = () => {
+    close();
+    if (onClose) onClose(); // إغلاق السايدبار في الموبايل
+  };
 
   return (
     <Box className="flex flex-col h-full bg-white">
+      {/* Modal لنموذج الاتصال */}
+      <Modal 
+        opened={opened} 
+        onClose={close} 
+        title={
+          <Group gap="sm">
+            <ThemeIcon size="md" radius="md" variant="light">
+              <Plus size={18} />
+            </ThemeIcon>
+            <Text fw={900}>إضافة اتصال جديد</Text>
+          </Group>
+        }
+        centered
+        radius="2rem"
+        padding="xl"
+        overlayProps={{
+          backgroundOpacity: 0.55,
+          blur: 3,
+        }}
+      >
+        <ConnectionForm onSuccess={handleAddSuccess} />
+      </Modal>
+
       {/* Brand */}
       <Box p="xl" className="pb-8">
         <Group gap="md">
@@ -34,7 +65,6 @@ export const Sidebar = ({ onClose }) => {
 
       <ScrollArea className="flex-1 px-md">
         <Stack gap="lg">
-          {/* Main Navigation */}
           <NavLink
             component={Link}
             to="/"
@@ -48,32 +78,38 @@ export const Sidebar = ({ onClose }) => {
 
           <Divider label="اتصالاتك النشطة" labelPosition="right" color="slate.1" />
 
-          <Stack gap="sm">
-            {connections.map(conn => (
-              <NavLink
-                key={conn.id}
-                label={conn.name}
-                description="PostgreSQL"
-                leftSection={<Database size={18} />}
-                active={activeConnectionId === conn.id}
-                onClick={() => { setActiveConnection(conn.id); }}
-                className="rounded-2xl py-3 border border-transparent data-[active]:border-indigo-100"
-                rightSection={activeConnectionId === conn.id && (
-                  <Badge variant="dot" color="indigo" size="sm">نشط</Badge>
-                )}
-                opened={activeConnectionId === conn.id}
-              >
+          {connections.length === 0 ? (
+            <Box p="xl" className="text-center border-2 border-dashed border-slate-100 rounded-3xl">
+              <Text size="xs" c="dimmed" fw={700}>لا يوجد اتصالات نشطة حالياً</Text>
+            </Box>
+          ) : (
+            <Stack gap="sm">
+              {connections.map(conn => (
                 <NavLink
-                  component={Link}
-                  to={`/query/${conn.id}`}
-                  label="منشئ الاستعلامات"
-                  leftSection={<Code size={16} />}
-                  onClick={onClose}
-                  className="rounded-xl mt-1 text-xs font-bold"
-                />
-              </NavLink>
-            ))}
-          </Stack>
+                  key={conn.id}
+                  label={conn.name}
+                  description={conn.database}
+                  leftSection={<Database size={18} />}
+                  active={activeConnectionId === conn.id}
+                  onClick={() => { setActiveConnection(conn.id); }}
+                  className="rounded-2xl py-3 border border-transparent data-[active]:border-indigo-100"
+                  rightSection={activeConnectionId === conn.id && (
+                    <Badge variant="dot" color="indigo" size="sm">نشط</Badge>
+                  )}
+                  opened={activeConnectionId === conn.id}
+                >
+                  <NavLink
+                    component={Link}
+                    to={`/query/${conn.id}`}
+                    label="منشئ الاستعلامات"
+                    leftSection={<Code size={16} />}
+                    onClick={onClose}
+                    className="rounded-xl mt-1 text-xs font-bold"
+                  />
+                </NavLink>
+              ))}
+            </Stack>
+          )}
         </Stack>
       </ScrollArea>
 
@@ -84,9 +120,10 @@ export const Sidebar = ({ onClose }) => {
             size="lg" 
             radius="xl" 
             variant="filled" 
-            color="slate.9"
+            color="indigo.9"
             leftSection={<Plus size={20} />}
-            className="shadow-xl shadow-slate-200"
+            className="shadow-xl shadow-indigo-200"
+            onClick={open}
           >
             إضافة اتصال
           </Button>
