@@ -11,8 +11,8 @@ export const Layout = ({ children }) => {
 
   if (isMobile) {
     return (
-      <div className="h-screen flex flex-col bg-background font-sans" dir="rtl">
-        <header className="px-6 py-4 border-b flex justify-between items-center bg-card/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+      <div className="flex flex-col h-screen bg-background overflow-hidden" dir="rtl">
+        <header className="px-5 py-4 border-b flex justify-between items-center bg-card/80 backdrop-blur-md z-50 shadow-sm shrink-0">
           <div className="flex items-center gap-2 text-primary font-black">
              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
               <Database className="w-5 h-5 text-white" />
@@ -30,8 +30,8 @@ export const Layout = ({ children }) => {
             </SheetContent>
           </Sheet>
         </header>
-        <main className="flex-grow overflow-y-auto bg-slate-50/50">
-          <div className="container mx-auto p-6 pb-24">
+        <main className="flex-1 overflow-y-auto bg-slate-50/50">
+          <div className="p-6 pb-24">
             {children}
           </div>
         </main>
@@ -40,12 +40,12 @@ export const Layout = ({ children }) => {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background font-sans" dir="rtl">
-      <aside className="flex-shrink-0 h-full border-e border-border/50 shadow-xl shadow-black/5 z-40 bg-card">
+    <div className="flex h-screen w-full overflow-hidden bg-background" dir="rtl">
+      <aside className="w-80 h-full border-e border-border/50 shadow-xl shadow-black/5 z-40 bg-card shrink-0">
         <Sidebar isMobile={false} />
       </aside>
-      <main className="flex-grow overflow-y-auto h-full bg-slate-50/50 relative">
-        <div className="container max-w-7xl mx-auto p-8 lg:p-12">
+      <main className="flex-1 overflow-y-auto bg-slate-50/50 relative h-full">
+        <div className="max-w-7xl mx-auto p-8 lg:p-12 min-h-full">
           {children}
         </div>
       </main>

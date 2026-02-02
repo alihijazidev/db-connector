@@ -7,11 +7,12 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { ConnectionProvider } from "@/context/ConnectionContext";
 import QueryBuilderPage from "./pages/QueryBuilderPage";
+import "./App.css";
 
 const queryClient = new QueryClient();
 
 const App = () => (
-  <div dir="rtl" className="font-sans">
+  <div dir="rtl" className="font-sans min-h-screen bg-background antialiased">
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
