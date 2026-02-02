@@ -73,20 +73,36 @@ export const executeQuery = (query) => {
       let filteredData = [...sourceData];
 
       if (query.filters && query.filters.length > 0) {
-        query.filters.forEach(filter => {
-          if (filter.valueType === 'subquery' && filter.column === 'id' && filter.subquery?.tableName === 'orders') {
-            const userIdsWithOrders = Array.from(new Set(MOCK_ORDER_DATA.map(o => o.user_id)));
-            filteredData = filteredData.filter(row => userIdsWithOrders.includes(row.id));
-          } 
-          else if (filter.valueType === 'literal' && filter.value) {
-            const val = filter.value.toLowerCase();
-            filteredData = filteredData.filter(row => {
-              const rowVal = String(row[filter.column] || '').toLowerCase();
-              if (filter.operator === '=') return rowVal === val;
-              if (filter.operator === 'LIKE') return rowVal.includes(val);
-              return true;
-            });
-          }
+        filteredData = filteredData.filter(row => {
+          let match = true;
+          query.filters.forEach((filter, idx) => {
+            const columnVal = String(row[filter.column] || '').toLowerCase();
+            const filterVal = String(filter.value || '').toLowerCase();
+            
+            let conditionMet = false;
+            switch (filter.operator) {
+              case '=': conditionMet = columnVal === filterVal; break;
+              case '!=': conditionMet = columnVal !== filterVal; break;
+              case '>': conditionMet = Number(columnVal) > Number(filterVal); break;
+              case '<': conditionMet = Number(columnVal) < Number(filterVal); break;
+              case '>=': conditionMet = Number(columnVal) >= Number(filterVal); break;
+              case '<=': conditionMet = Number(columnVal) <= Number(filterVal); break;
+              case 'LIKE': conditionMet = columnVal.includes(filterVal); break;
+              case 'IN': 
+                const vals = filterVal.split(',').map(v => v.trim());
+                conditionMet = vals.includes(columnVal);
+                break;
+              default: conditionMet = true;
+            }
+
+            if (idx === 0) {
+              match = conditionMet;
+            } else {
+              if (filter.logicalOperator === 'OR') match = match || conditionMet;
+              else match = match && conditionMet;
+            }
+          });
+          return match;
         });
       }
 
