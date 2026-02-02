@@ -3,42 +3,55 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { ConnectionForm } from './ConnectionForm';
 import { useConnection } from '@/context/ConnectionContext';
-import { Database, PlusCircle, ChevronLeft, Code, Search, Box } from 'lucide-react';
+import { Database, PlusCircle, ChevronLeft, Code, Search, Box, Settings2, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 
 const SidebarItem = ({ connectionName, databaseName, connectionId, isActive, onClick }) => {
   return (
-    <div className={cn(
-      "flex flex-col p-3 rounded-xl transition-all duration-200 cursor-pointer border border-transparent",
-      isActive ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm border-sidebar-border" : "text-sidebar-foreground hover:bg-sidebar-accent/50"
-    )} onClick={onClick}>
+    <div 
+      className={cn(
+        "group flex flex-col p-4 rounded-2xl transition-all duration-300 cursor-pointer border-2 mb-2",
+        isActive 
+          ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20 scale-[1.02]" 
+          : "bg-background border-transparent hover:border-primary/20 hover:bg-primary/5 text-foreground"
+      )} 
+      onClick={onClick}
+    >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3 overflow-hidden">
           <div className={cn(
-            "p-2 rounded-lg",
-            isActive ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary"
+            "p-2.5 rounded-xl transition-colors duration-300",
+            isActive ? "bg-white/20 text-white" : "bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white"
           )}>
-            <Database className="w-4 h-4" />
+            <Database className="w-5 h-5" />
           </div>
           <div className="flex flex-col overflow-hidden text-right">
-            <span className="font-bold truncate text-sm">{connectionName}</span>
-            <div className="flex items-center text-[10px] text-muted-foreground mt-0.5">
+            <span className="font-bold truncate text-sm leading-tight">{connectionName}</span>
+            <div className={cn(
+              "flex items-center text-[10px] mt-1 font-medium",
+              isActive ? "text-white/80" : "text-muted-foreground"
+            )}>
               <Box className="w-3 h-3 ms-1 flex-shrink-0" />
               <span className="truncate">{databaseName}</span>
             </div>
           </div>
         </div>
-        <ChevronLeft className={cn("w-4 h-4 transition-transform flex-shrink-0", isActive && "-rotate-90")} />
+        <ChevronLeft className={cn(
+          "w-4 h-4 transition-transform duration-300", 
+          isActive ? "-rotate-90 text-white" : "text-muted-foreground group-hover:text-primary"
+        )} />
       </div>
       
       {isActive && (
-        <Link to={`/query/${connectionId}`} className="mt-3" onClick={(e) => e.stopPropagation()}>
-          <Button variant="secondary" size="sm" className="w-full justify-start rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-xs py-4">
-            <Code className="w-3.5 h-3.5 ms-2" /> منشئ الاستعلامات
-          </Button>
-        </Link>
+        <div className="mt-4 pt-4 border-t border-white/20 animate-in fade-in slide-in-from-top-2 duration-300">
+          <Link to={`/query/${connectionId}`} className="block" onClick={(e) => e.stopPropagation()}>
+            <Button variant="secondary" size="sm" className="w-full justify-center rounded-xl bg-white text-primary hover:bg-white/90 font-bold text-xs py-5">
+              <Code className="w-4 h-4 ms-2" /> فتح منشئ الاستعلامات
+            </Button>
+          </Link>
+        </div>
       )}
     </div>
   );
@@ -48,6 +61,7 @@ export const Sidebar = ({ isMobile }) => {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { connections, activeConnectionId, setActiveConnection } = useConnection();
+  const location = useLocation();
 
   const handleConnectionClick = (id) => {
     setActiveConnection(id === activeConnectionId ? null : id);
@@ -62,73 +76,81 @@ export const Sidebar = ({ isMobile }) => {
 
   return (
     <div className={cn(
-      "flex flex-col h-full bg-sidebar p-4 transition-all duration-300 overflow-hidden border-l",
-      isMobile ? "w-full" : "w-64"
+      "flex flex-col h-full bg-card p-6 transition-all duration-300 overflow-hidden",
+      isMobile ? "w-full" : "w-80"
     )}>
-      <h2 className="text-xl font-black text-primary mb-6 flex-shrink-0 flex items-center gap-2">
-        <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-          <Database className="w-5 h-5 text-white" />
+      <div className="flex items-center gap-3 mb-8">
+        <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/30">
+          <Database className="w-6 h-6 text-white" />
         </div>
-        موصل البيانات
-      </h2>
+        <div>
+          <h2 className="text-xl font-black text-foreground tracking-tight leading-none">موصل البيانات</h2>
+          <p className="text-[10px] text-muted-foreground font-bold mt-1 opacity-60 uppercase tracking-widest">الإصدار الذكي 2.0</p>
+        </div>
+      </div>
 
-      <div className="flex-shrink-0 space-y-4 mb-6">
+      <div className="flex-shrink-0 space-y-4 mb-8">
         <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
           <SheetTrigger asChild>
-            <Button className="w-full rounded-xl py-6 text-base font-bold bg-primary hover:bg-primary/90 transition-all shadow-md">
+            <Button className="w-full rounded-2xl py-7 text-base font-black bg-primary hover:bg-primary/90 transition-all shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95">
               <PlusCircle className="w-5 h-5 ms-2" /> اتصال جديد
             </Button>
           </SheetTrigger>
-          <SheetContent side="right" className="w-full sm:max-w-md bg-background p-0">
-            <SheetHeader className="p-6 border-b text-right">
-              <SheetTitle className="text-2xl font-bold text-primary">إعداد الاتصال</SheetTitle>
-              <SheetDescription>
-                أدخل تفاصيل الاتصال بقاعدة البيانات الجديدة الخاصة بك.
+          <SheetContent side="right" className="w-full sm:max-w-md bg-background p-0 border-s-0">
+            <SheetHeader className="p-8 border-b text-right bg-primary/5">
+              <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center mb-4">
+                <Settings2 className="w-7 h-7 text-white" />
+              </div>
+              <SheetTitle className="text-3xl font-black text-primary">إعداد الاتصال</SheetTitle>
+              <SheetDescription className="text-base text-muted-foreground font-medium">
+                أدخل تفاصيل الاتصال بقاعدة البيانات الخاصة بك للبدء في تحليل البيانات.
               </SheetDescription>
             </SheetHeader>
-            <div className="p-6">
+            <div className="p-8">
               <ConnectionForm onSuccess={() => setIsSheetOpen(false)} />
             </div>
           </SheetContent>
         </Sheet>
 
-        <div className="relative">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="relative group">
+          <Search className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
           <Input 
-            placeholder="بحث بالاسم أو قاعدة البيانات..." 
-            className="rounded-xl pr-9 bg-background/50 border-sidebar-border focus:bg-background transition-colors"
+            placeholder="بحث في القواعد..." 
+            className="rounded-2xl pr-10 py-6 bg-background/50 border-border/50 focus:border-primary/30 focus:bg-background transition-all"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
       </div>
 
-      <div className="flex-grow space-y-3 overflow-y-auto custom-scrollbar pb-4">
-        <div className="flex items-center justify-between mb-2 sticky top-0 bg-sidebar z-10 py-1">
-          <h3 className="text-[10px] font-black text-sidebar-foreground/50 uppercase tracking-widest">
-            الاتصالات ({filteredConnections.length})
+      <div className="flex-grow flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between mb-4 px-2 flex-shrink-0">
+          <h3 className="text-[11px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+            <History className="w-3 h-3" /> الاتصالات النشطة ({filteredConnections.length})
           </h3>
         </div>
         
-        {filteredConnections.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-center px-2">
-            <Database className="w-8 h-8 text-muted-foreground/30 mb-2" />
-            <p className="text-xs text-muted-foreground italic">
-              {searchQuery ? "لم يتم العثور على نتائج للبحث." : "لا توجد اتصالات بعد."}
-            </p>
-          </div>
-        ) : (
-          filteredConnections.map((conn) => (
-            <SidebarItem
-              key={conn.id}
-              connectionName={conn.name}
-              databaseName={conn.database}
-              connectionId={conn.id}
-              isActive={conn.id === activeConnectionId}
-              onClick={() => handleConnectionClick(conn.id)}
-            />
-          ))
-        )}
+        <div className="flex-grow overflow-y-auto custom-scrollbar px-1 pb-6 space-y-1">
+          {filteredConnections.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/20 rounded-3xl border-2 border-dashed border-border/50 px-4">
+              <Database className="w-10 h-10 text-muted-foreground/20 mb-3" />
+              <p className="text-sm text-muted-foreground font-medium italic">
+                {searchQuery ? "لا توجد نتائج للبحث." : "ابدأ بإضافة أول اتصال لك."}
+              </p>
+            </div>
+          ) : (
+            filteredConnections.map((conn) => (
+              <SidebarItem
+                key={conn.id}
+                connectionName={conn.name}
+                databaseName={conn.database}
+                connectionId={conn.id}
+                isActive={conn.id === activeConnectionId}
+                onClick={() => handleConnectionClick(conn.id)}
+              />
+            ))
+          )}
+        </div>
       </div>
     </div>
   );

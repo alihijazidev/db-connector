@@ -10,24 +10,27 @@ export const QueryBuilderSection = ({
   badge
 }) => {
   return (
-    <div className={cn("relative p-6 rounded-3xl border-2 border-primary/5 bg-background/40 hover:border-primary/20 transition-all duration-300", className)}>
-      <div className="flex items-start gap-4 mb-6">
-        <div className="p-3 rounded-2xl bg-primary/10 text-primary">
+    <div className={cn(
+      "relative p-8 rounded-[2.5rem] border-2 border-border/50 bg-card/50 backdrop-blur-sm transition-all duration-500 hover:border-primary/30 hover:shadow-2xl hover:shadow-primary/5 group", 
+      className
+    )}>
+      <div className="flex flex-col md:flex-row md:items-start gap-6 mb-8">
+        <div className="p-4 rounded-2xl bg-primary/10 text-primary transition-all duration-500 group-hover:scale-110 group-hover:bg-primary group-hover:text-white shadow-lg shadow-primary/5">
           {icon}
         </div>
-        <div className="flex-grow">
-          <div className="flex items-center gap-2">
-            <h4 className="text-xl font-black text-foreground">{title}</h4>
+        <div className="flex-grow space-y-2">
+          <div className="flex items-center gap-3">
+            <h4 className="text-2xl font-black text-foreground tracking-tight">{title}</h4>
             {badge && (
-              <span className="px-2 py-0.5 rounded-full bg-primary/20 text-primary text-[10px] font-bold uppercase tracking-wider">
+              <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest border border-primary/20">
                 {badge}
               </span>
             )}
           </div>
-          <p className="text-sm text-muted-foreground mt-1">{description}</p>
+          <p className="text-base text-muted-foreground font-medium leading-relaxed">{description}</p>
         </div>
       </div>
-      <div className="ps-0 md:ps-14">
+      <div className="ps-0 md:ps-20">
         {children}
       </div>
     </div>

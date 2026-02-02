@@ -1,32 +1,65 @@
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Database, Zap } from "lucide-react";
+import { Database, Zap, ArrowLeftCircle, ShieldCheck, Cpu } from "lucide-react";
+
+const FeatureItem = ({ icon: Icon, title, description }) => (
+  <div className="flex flex-col items-center p-6 bg-background rounded-3xl border-2 border-primary/5 hover:border-primary/20 transition-all hover:shadow-xl hover:-translate-y-1">
+    <div className="p-4 bg-primary/10 rounded-2xl text-primary mb-4">
+      <Icon className="w-6 h-6" />
+    </div>
+    <h3 className="font-black text-lg mb-2">{title}</h3>
+    <p className="text-sm text-muted-foreground text-center leading-relaxed">{description}</p>
+  </div>
+);
 
 const Index = () => {
   return (
     <Layout>
-      <div className="flex flex-col items-center justify-center min-h-[80vh] text-center">
-        <Card className="w-full max-w-3xl p-8 rounded-3xl shadow-2xl border-4 border-primary/10">
-          <CardHeader className="space-y-4">
-            <Zap className="w-16 h-16 mx-auto text-primary animate-pulse" />
-            <CardTitle className="text-5xl font-extrabold text-foreground">
-              موصل قواعد البيانات الذكي
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <p className="text-xl text-muted-foreground max-w-xl mx-auto">
-              اتصل بقواعد بياناتك، استكشف الجداول، وابنِ استعلامات معقدة بسهولة دون الحاجة لكتابة كود SQL.
-            </p>
-            <div className="flex justify-center space-x-4">
-              <div className="flex items-center text-lg font-medium text-primary">
-                <Database className="w-5 h-5 ms-2" /> ابدأ بإضافة اتصال جديد من القائمة الجانبية.
-              </div>
+      <div className="max-w-5xl mx-auto space-y-16 animate-in fade-in duration-700">
+        <div className="flex flex-col items-center text-center space-y-8">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-xs font-black uppercase tracking-widest animate-bounce">
+            <Zap className="w-4 h-4 fill-current" /> مرحباً بك في المستقبل
+          </div>
+          
+          <h1 className="text-6xl md:text-7xl font-black text-foreground tracking-tighter leading-[1.1]">
+            تحكم ببياناتك <br /> <span className="text-primary italic">بذكاء فائق</span>
+          </h1>
+          
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed font-medium">
+            استكشف، اربط، وحلل قواعد بياناتك دون كتابة سطر كود SQL واحد. الحل الأمثل لفرق البيانات العصرية.
+          </p>
+
+          <div className="flex flex-wrap justify-center gap-4">
+            <div className="flex items-center gap-3 px-6 py-4 bg-primary text-primary-foreground rounded-2xl font-black shadow-2xl shadow-primary/30">
+              <ArrowLeftCircle className="w-6 h-6" />
+              ابدأ بإضافة اتصال من القائمة الجانبية
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <FeatureItem 
+            icon={Database} 
+            title="ربط متعدد" 
+            description="اتصل بقواعد بيانات PostgreSQL و MySQL و SQLite في ثوانٍ معدودة."
+          />
+          <FeatureItem 
+            icon={Cpu} 
+            title="منشئ مرئي" 
+            description="واجهة سحب وإفلات لبناء استعلامات معقدة وعلاقات (Joins) متطورة."
+          />
+          <FeatureItem 
+            icon={ShieldCheck} 
+            title="آمن وسريع" 
+            description="تشفير كامل لبيانات الاتصال وأداء فائق في معالجة النتائج الضخمة."
+          />
+        </div>
+
+        <div className="pt-20">
+          <MadeWithDyad />
+        </div>
       </div>
-      <MadeWithDyad />
     </Layout>
   );
 };
