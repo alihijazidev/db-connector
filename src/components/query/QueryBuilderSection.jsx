@@ -1,4 +1,5 @@
 import React from 'react';
+import { Paper, Group, Text, ThemeIcon, Stack, Badge } from '@mantine/core';
 import { cn } from '@/lib/utils';
 
 export const QueryBuilderSection = ({
@@ -6,56 +7,74 @@ export const QueryBuilderSection = ({
   description,
   icon,
   children,
-  className,
   badge,
   variant = "indigo"
 }) => {
-  const variants = {
-    indigo: "bg-indigo-50/30 border-indigo-100",
-    amber: "bg-amber-50/30 border-amber-100",
-    emerald: "bg-emerald-50/30 border-emerald-100",
-    blue: "bg-blue-50/30 border-blue-100",
+  const colorMap = {
+    indigo: "indigo",
+    amber: "orange",
+    emerald: "teal",
+    blue: "blue",
   };
 
-  const iconVariants = {
-    indigo: "bg-indigo-600 shadow-indigo-200",
-    amber: "bg-amber-500 shadow-amber-200",
-    emerald: "bg-emerald-500 shadow-emerald-200",
-    blue: "bg-blue-600 shadow-blue-200",
-  };
+  const activeColor = colorMap[variant] || "indigo";
 
   return (
-    <div className={cn(
-      "rounded-[2.5rem] border-2 p-8 transition-all duration-500 hover:shadow-xl hover:shadow-indigo-50/50",
-      variants[variant] || variants.indigo,
-      className
-    )}>
-      {/* Header Layout: Horizontal Icon + Title */}
-      <div className="flex items-center gap-6 mb-8">
-        <div className={cn(
-          "w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg shrink-0",
-          iconVariants[variant] || iconVariants.indigo
-        )}>
-          {React.cloneElement(icon, { size: 28, strokeWidth: 2.5 })}
-        </div>
-        
-        <div className="flex-1">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h3 className="text-2xl font-black text-slate-800 tracking-tight">{title}</h3>
-            {badge && (
-              <span className="px-3 py-1 bg-white/80 backdrop-blur-sm text-indigo-600 text-[10px] font-black uppercase rounded-full border border-indigo-100 shadow-sm">
-                {badge}
-              </span>
-            )}
-          </div>
-          <p className="text-slate-500 font-medium mt-1">{description}</p>
-        </div>
-      </div>
+    <Paper 
+      shadow="xl" 
+      radius="2.5rem" 
+      p="xl" 
+      withBorder 
+      className={cn("transition-all duration-500 hover:shadow-2xl")}
+      style={{
+        backgroundColor: `var(--mantine-color-${activeColor}-0)`,
+        borderColor: `var(--mantine-color-${activeColor}-2)`,
+      }}
+    >
+      <Stack gap="xl">
+        {/* Horizontal Header using Mantine Group */}
+        <Group align="center" gap="lg" wrap="nowrap">
+          <ThemeIcon 
+            size={56} 
+            radius="xl" 
+            variant="gradient"
+            gradient={{ from: activeColor, to: `${activeColor}.4`, deg: 45 }}
+            className="shadow-lg shrink-0"
+          >
+            {React.cloneElement(icon, { size: 28, strokeWidth: 2.5 })}
+          </ThemeIcon>
+          
+          <Stack gap={2} style={{ flex: 1 }}>
+            <Group gap="xs">
+              <Text size="xl" fw={900} className="tracking-tight text-slate-800">
+                {title}
+              </Text>
+              {badge && (
+                <Badge variant="white" color={activeColor} size="sm" radius="xl" className="shadow-sm">
+                  {badge}
+                </Badge>
+              )}
+            </Group>
+            <Text size="sm" fw={500} c="dimmed">
+              {description}
+            </Text>
+          </Stack>
+        </Group>
 
-      {/* Content Area */}
-      <div className="bg-white/60 backdrop-blur-md rounded-3xl p-6 border border-white/50 shadow-inner">
-        {children}
-      </div>
-    </div>
+        {/* Content Area */}
+        <Paper 
+          radius="2rem" 
+          p="lg" 
+          withBorder 
+          style={{ 
+            backgroundColor: 'rgba(255, 255, 255, 0.7)',
+            backdropFilter: 'blur(10px)',
+            borderColor: 'rgba(255, 255, 255, 0.5)'
+          }}
+        >
+          {children}
+        </Paper>
+      </Stack>
+    </Paper>
   );
 };
