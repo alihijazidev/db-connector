@@ -1,16 +1,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 
-interface QueryBuilderSectionProps {
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-  children: React.ReactNode;
-  className?: string;
-  badge?: string;
-}
-
-export const QueryBuilderSection: React.FC<QueryBuilderSectionProps> = ({
+export const QueryBuilderSection = ({
   title,
   description,
   icon,
