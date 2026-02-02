@@ -1,6 +1,6 @@
 import React from 'react';
-import { Group, Select, TextInput, ActionIcon, Paper, Text, Stack, ThemeIcon, Tooltip, SegmentedControl } from '@mantine/core';
-import { X, Plus, Type, Database, Layers, Hash } from 'lucide-react';
+import { Group, Select, TextInput, ActionIcon, Paper, Text, Stack, ThemeIcon, Tooltip, SegmentedControl, Box } from '@mantine/core';
+import { X, Plus, Type, Database, Layers, Filter } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const OPERATORS = [
@@ -57,9 +57,9 @@ export const FilterConditionRow = ({
           )}
 
           {index === 0 && (
-            <Box w={index > 0 ? 0 : 40} className="flex items-center justify-center">
-              <ThemeIcon variant="light" color="indigo" radius="md">
-                <Filter size={16} />
+            <Box w={40} className="flex items-center justify-center mb-1">
+              <ThemeIcon variant="light" color="indigo" radius="md" size="lg">
+                <Filter size={18} />
               </ThemeIcon>
             </Box>
           )}
@@ -176,6 +176,3 @@ export const FilterConditionRow = ({
     </Paper>
   );
 };
-
-// Helper components for Mantine context
-import { Box, Filter } from '@mantine/core';
